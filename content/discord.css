@@ -1,0 +1,37 @@
+/* Injected into Discord.
+ *
+ * Feature rules, scoped to classes discord.js toggles on <html>. Discord's
+ * class names are generated per build, so these match on data attributes and
+ * class-name prefixes; check them first when a feature breaks after a Discord
+ * update. The extension's own UI styles are in ui.css.
+ *
+ * !important is needed to beat Discord's own specificity.
+ */
+
+/* ==================== Study-channel focus ==================== */
+
+/* Channel rows that aren't study channels; discord.js tags them. */
+html.sm-discord-focus [data-sm-offtopic] {
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+html.sm-discord-focus [data-sm-offtopic]:hover {
+  opacity: 0.7;
+}
+
+/* ==================== Hide unread badges ==================== */
+
+/* In the server list: mention counts, the white unread pill beside each server,
+   and the "New mentions" bar. */
+html.sm-hide-badges
+  :is([data-list-id="guildsnav"], nav[aria-label="Servers sidebar"])
+  :is(
+    [class*="numberBadge"],
+    [class*="lowerBadge"],
+    [class*="upperBadge"],
+    [class^="pill"],
+    [class*=" pill"],
+    [class*="unreadMentionsIndicator"]
+  ) {
+  display: none !important;
+}

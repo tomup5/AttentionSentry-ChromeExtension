@@ -1,0 +1,19 @@
+/* Injected into nytimes.com.
+ *
+ * Feature rules, scoped to classes nyt.js toggles on <html>. The Times'
+ * class names are generated, so modules are tagged by nyt.js from their
+ * heading text; the attribute selectors below catch the ones with stable
+ * test IDs before they render. The extension's own UI styles are in ui.css.
+ *
+ * !important is needed to beat the site's own specificity.
+ */
+
+/* ==================== Hide "More to read" ==================== */
+
+/* Most Popular, Trending, Editors' Picks, More to read, and similar modules. */
+html.sm-hide-recirc [data-sm-recirc],
+html.sm-hide-recirc [data-testid*="recirc" i],
+html.sm-hide-recirc [data-testid*="most-popular" i],
+html.sm-hide-recirc [data-testid*="mostpopular" i] {
+  display: none !important;
+}

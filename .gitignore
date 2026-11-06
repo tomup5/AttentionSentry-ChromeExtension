@@ -1,0 +1,23 @@
+# dependencies and build output
+node_modules/
+dist/
+*.zip
+*.crx
+
+# signing keys and secrets
+*.pem
+*.key
+.env
+.env.*
+
+# editor, OS, and tool files
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs and scratch
+*.log
+*.tmp

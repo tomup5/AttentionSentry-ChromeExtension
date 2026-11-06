@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Attention Guard</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="view" id="main-view">
+      <header class="header">
+        <div class="header-title">
+          <h1>Attention Guard</h1>
+          <p class="status" id="status-text">Off</p>
+        </div>
+        <button class="icon-button" id="open-settings" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle
+              cx="12"
+              cy="12"
+              r="8.4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.8"
+              stroke-dasharray="3.3 3.3"
+            />
+            <path
+              fill="currentColor"
+              fill-rule="evenodd"
+              d="M12 5.2a6.8 6.8 0 1 1 0 13.6a6.8 6.8 0 1 1 0-13.6zm0 4.3a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z"
+            />
+          </svg>
+        </button>
+        <label class="switch" title="Turn Attention Guard on or off">
+          <input type="checkbox" id="studyMode" aria-label="Attention Guard" />
+          <span class="slider"></span>
+        </label>
+      </header>
+
+      <!-- Filled in by popup.js when the active tab has a study session on a supported site. -->
+      <section class="section session" id="session" hidden>
+        <h2 class="section-title">This session</h2>
+        <p class="session-goal" id="session-goal"></p>
+        <p class="session-stats" id="session-stats"></p>
+      </section>
+
+      <main id="controls">
+        <section class="section">
+          <h2 class="section-title">Strictness</h2>
+          <div class="segmented" id="mode" role="radiogroup" aria-label="Strictness">
+            <button data-mode="hint" role="radio">Hint</button>
+            <button data-mode="pause" role="radio">Pause</button>
+            <button data-mode="block" role="radio">Block</button>
+          </div>
+          <p class="hint-text" id="mode-desc"></p>
+        </section>
+
+        <!-- One collapsible section per site goes here, built by popup.js from SITE_SECTIONS. -->
+
+        <section class="section site" data-section="siteBlock">
+          <div class="site-head">
+            <button class="site-toggle" type="button" aria-expanded="false">
+              <svg class="chevron" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                <path
+                  d="M9 6l6 6-6 6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span class="site-name">Distracting sites</span>
+              <span class="count" id="sites-count"></span>
+            </button>
+            <label class="switch" title="Block distracting sites">
+              <input type="checkbox" id="siteBlock" aria-label="Block distracting sites" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="site-body" hidden>
+            <p class="hint-text" id="sites-desc"></p>
+
+            <div class="site-options" id="site-options">
+              <!-- Filled in by popup.js from BLOCKABLE_SITES and the user's custom sites. -->
+              <div class="site-list" id="site-list"></div>
+
+              <form class="add-site" id="add-site">
+                <input
+                  type="text"
+                  id="add-site-input"
+                  placeholder="Add a site, e.g. reddit.com"
+                  aria-label="Add a site to block"
+                  autocomplete="off"
+                />
+                <button type="submit">Add</button>
+              </form>
+              <p class="form-error" id="add-site-error" hidden></p>
+
+              <p class="site-access" id="site-access" hidden>
+                Some sites show Chrome's error page instead of the Attention Guard page.
+                <button class="text-button" id="allow-access" type="button">Allow access</button>
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="view" id="settings-view" hidden>
+      <header class="header">
+        <button class="icon-button" id="close-settings" title="Back" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path
+              d="M15 5l-7 7 7 7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <div class="header-title">
+          <h1>Settings</h1>
+        </div>
+      </header>
+
+      <main>
+        <section class="section">
+          <h2 class="section-title">Appearance</h2>
+
+          <label class="field">
+            <span class="field-label">Font</span>
+            <select id="font"></select>
+          </label>
+
+          <div class="field">
+            <span class="field-label" id="background-label">Background</span>
+            <div
+              class="swatches"
+              id="background"
+              role="radiogroup"
+              aria-labelledby="background-label"
+            ></div>
+          </div>
+
+          <div class="field">
+            <span class="field-label" id="accent-label">Accent</span>
+            <div
+              class="swatches"
+              id="accent"
+              role="radiogroup"
+              aria-labelledby="accent-label"
+            ></div>
+          </div>
+
+          <div class="field">
+            <span class="field-label" id="text-size-label">Text size</span>
+            <div
+              class="segmented segmented-compact"
+              id="text-size"
+              role="radiogroup"
+              aria-labelledby="text-size-label"
+            ></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Preview</h2>
+          <div class="preview" aria-hidden="true">
+            <p class="preview-title">You've scrolled about 10 screens down</p>
+            <p class="preview-body">You came here for: Watch a lecture / tutorial</p>
+            <p class="preview-why">
+              <strong>Infinite scroll.</strong> This feed has no bottom on purpose, so there's never
+              a moment that tells you to stop.
+            </p>
+            <div class="preview-actions">
+              <span class="preview-button">Keep scrolling</span>
+              <span class="preview-button preview-primary">Close YouTube</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <button class="text-button" id="reset-appearance">Reset appearance</button>
+        </section>
+      </main>
+    </div>
+
+    <script src="../shared/settings.js"></script>
+    <script src="../shared/appearance.js"></script>
+    <script src="../shared/sites.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

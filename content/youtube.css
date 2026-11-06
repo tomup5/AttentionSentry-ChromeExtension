@@ -1,0 +1,78 @@
+/* Injected into YouTube.
+ *
+ * Feature rules, scoped to classes youtube.js toggles on <html>. These target
+ * YouTube markup and are the first place to look when a feature breaks after
+ * a YouTube redesign. The extension's own UI styles are in ui.css.
+ *
+ * !important is needed to beat YouTube's own specificity.
+ */
+
+/* ==================== Hide metrics ==================== */
+
+/* Any element whose text is a metric ("1.2M views") on cards, Shorts, the watch
+   page, and channel headers. youtube.js tags these with [data-sm-metric] because
+   markup and class names vary between YouTube's layouts. Everything after the
+   metric goes too (the upload date), along with the play icon and delimiter
+   before it. Earlier parts of the line, like the channel name, stay visible. */
+html.sm-hide-metrics [data-sm-metric],
+html.sm-hide-metrics [data-sm-metric] ~ *,
+html.sm-hide-metrics .ytContentMetadataViewModelLeadingIcon:has(+ [data-sm-metric]),
+html.sm-hide-metrics .ytContentMetadataViewModelDelimiter:has(+ [data-sm-metric]),
+html.sm-hide-metrics
+  .ytContentMetadataViewModelDelimiter:has(
+    + .ytContentMetadataViewModelLeadingIcon + [data-sm-metric]
+  ),
+html.sm-hide-metrics #metadata-line:has([data-sm-metric]),
+html.sm-hide-metrics view-count-factoid-renderer {
+  display: none !important;
+}
+
+/* Elements with stable IDs or a fixed position in their component. */
+html.sm-hide-metrics ytd-watch-info-text #view-count,
+html.sm-hide-metrics #owner-sub-count,
+html.sm-hide-metrics like-button-view-model .ytSpecButtonShapeNextButtonTextContent,
+html.sm-hide-metrics ytd-comments-header-renderer #count,
+html.sm-hide-metrics ytd-structured-description-channel-lockup-renderer #subscriber-count,
+html.sm-hide-metrics ytd-reel-video-renderer .ytSpecButtonShapeWithLabelLabel {
+  visibility: hidden !important;
+}
+
+/* ==================== Blur thumbnails ==================== */
+
+html.sm-blur-thumbs :is(ytd-thumbnail, yt-thumbnail-view-model) img {
+  filter: blur(14px) grayscale(0.4);
+  transition: filter 0.25s;
+}
+/* Reveal on hover. */
+html.sm-blur-thumbs
+  :is(
+    ytd-rich-item-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer,
+    yt-lockup-view-model
+  ):hover
+  img,
+html.sm-blur-thumbs :is(ytd-thumbnail, yt-thumbnail-view-model):hover img {
+  filter: none;
+}
+
+/* ==================== Rabbit-hole guard (Block mode) ==================== */
+
+/* "Up next" sidebar, end-screen grid and cards, the autoplay countdown,
+   and Shorts shelves on the home page and in search. */
+html.sm-rabbit-block #secondary,
+html.sm-rabbit-block .ytp-endscreen-content,
+html.sm-rabbit-block .ytp-ce-element,
+html.sm-rabbit-block .ytp-autonav-endscreen,
+html.sm-rabbit-block ytd-rich-shelf-renderer[is-shorts],
+html.sm-rabbit-block ytd-reel-shelf-renderer {
+  display: none !important;
+}
+
+/* ==================== Endless scroll (Block mode) ==================== */
+
+/* YouTube loads the next page of results when this element enters the viewport. */
+html.sm-feed-bottom ytd-continuation-item-renderer {
+  display: none !important;
+}
+
