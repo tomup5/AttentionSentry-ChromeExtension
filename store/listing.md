@@ -83,4 +83,4 @@ Certify all three statements:
 - I do not use or transfer user data for purposes that are unrelated to my item's single purpose.
 - I do not use or transfer user data to determine creditworthiness or for lending purposes.
 
-**Privacy policy URL:** link to `PRIVACY.md` in the GitHub repository, e.g. `https://github.com/<username>/attention-sentry/blob/main/PRIVACY.md`.
+**Privacy policy URL:** `https://github.com/tomup5/AttentionSentry-ChromeExtension/blob/main/PRIVACY.md`
