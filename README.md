@@ -104,7 +104,7 @@ Attention Sentry makes no network requests and collects no data. Its scripts run
 
 ## Background
 
-Built for ENGL 4010 at Saint Louis University. The pattern explanations draw on:
+The pattern explanations draw on:
 
 - Mildner, T., et al. "About Engaging and Governing Strategies: A Thematic Analysis of Dark Patterns in Social Networking Services." *CHI '23*. https://doi.org/10.1145/3544548.3580695
 - Monge Roffarello, A., et al. "Defining and Identifying Attention Capture Deceptive Designs in Digital Interfaces." *CHI '23*. https://doi.org/10.1145/3544548.3580729
