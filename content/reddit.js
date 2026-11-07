@@ -152,7 +152,7 @@ function applyAll() {
   if (settings.reddit.hideMetrics) explainMetricsOnce();
   renderIntentionBadge(INTENTION);
 
-  // Force the page logic to re-run in case Attention Guard was just enabled.
+  // Force the page logic to re-run in case Attention Sentry was just enabled.
   lastHref = null;
   onNavigate();
 }

@@ -88,7 +88,7 @@ function checkGame() {
     title: settings.mode === "block" ? `${game} is off while you study` : `Play ${game} now?`,
     body:
       settings.mode === "block"
-        ? "It'll be here when you turn Attention Guard off. Today's puzzle doesn't go anywhere."
+        ? "It'll be here when you turn Attention Sentry off. Today's puzzle doesn't go anywhere."
         : "Today's puzzle will still be here after you study.",
     technique: TECHNIQUES.dailyGames,
     buttons:
@@ -220,7 +220,7 @@ function applyAll() {
 
   renderIntentionBadge(INTENTION);
 
-  // Force the page logic to re-run in case Attention Guard was just enabled.
+  // Force the page logic to re-run in case Attention Sentry was just enabled.
   lastHref = null;
   onNavigate();
 }

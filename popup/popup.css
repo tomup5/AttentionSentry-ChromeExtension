@@ -7,8 +7,10 @@
   --accent: #2c5f78;
   --onAccent: #ffffff;
   --scale: 1;
+  --transform: none;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --subtle: color-mix(in srgb, var(--text) 6%, var(--bg));
+  --tint: transparent;
 }
 
 * {
@@ -19,6 +21,7 @@ body {
   width: 340px;
   margin: 0;
   font-family: var(--font);
+  text-transform: var(--transform);
   font-size: 13px;
   line-height: 1.4;
   color: var(--text);
@@ -37,6 +40,7 @@ button,
 input,
 select {
   font: inherit;
+  text-transform: inherit;
   color: inherit;
 }
 
@@ -53,6 +57,7 @@ select {
   gap: 8px;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
+  background: var(--tint);
 }
 .header-title {
   flex: 1;
@@ -130,6 +135,7 @@ main.disabled {
   border: 1px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
+  background: var(--tint);
 }
 .segmented button {
   flex: 1;
@@ -352,6 +358,7 @@ select {
 
 .session {
   border-bottom: 1px solid var(--border);
+  background: var(--tint);
 }
 .session-goal {
   font-weight: 500;
@@ -382,6 +389,31 @@ select {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.move {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.move-button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 11px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.move-button:hover:not(:disabled) {
+  background: var(--subtle);
+  color: var(--text);
+}
+.move-button:disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 .site-toggle {
   display: flex;
@@ -530,4 +562,12 @@ select {
   margin-top: 6px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.site-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 3px;
 }

@@ -16,6 +16,7 @@ let feedHasBottom = false; // Block mode: feed loading has been stopped
 let shortsSeenOnThisVisit = 0;
 let lastHref = null;
 let lastHandledVideo = null;
+let lastCountedShort = null; // so a settings change doesn't count the same Short twice
 
 // --- Helpers ---
 
@@ -156,7 +157,8 @@ const scrollNudge = createScrollNudge({
 
 // Shorts don't scroll the page; each swipe is a new URL, so count visits instead.
 function onShortsVisit() {
-  if (!settings.youtube.scrollNudge) return;
+  if (!settings.youtube.scrollNudge || location.href === lastCountedShort) return;
+  lastCountedShort = location.href;
   shortsSeenOnThisVisit++;
   if (shortsSeenOnThisVisit < settings.youtube.scrollScreens || isOverlayOpen()) return;
   shortsSeenOnThisVisit = 0;
@@ -295,6 +297,11 @@ function onNavigate() {
   applyPageClasses();
 
   if (!siteActive()) return;
+  // Checked on every navigation, not just at startup: "Back to studying" may
+  // only go back to another YouTube page, which mustn't skip the question.
+  if (settings.youtube.intention && !session.get("intentionAsked", false)) {
+    showIntentionScreen(INTENTION);
+  }
   if (pageType() === "watch") handleWatchPage();
   if (pageType() === "shorts") onShortsVisit();
 }
@@ -310,12 +317,9 @@ function applyAll() {
   }
 
   if (settings.youtube.hideMetrics) explainMetricsOnce();
-  if (settings.youtube.intention && !session.get("intentionAsked", false)) {
-    showIntentionScreen(INTENTION);
-  }
   renderIntentionBadge(INTENTION);
 
-  // Force the page logic to re-run in case Attention Guard was just enabled.
+  // Force the page logic to re-run in case Attention Sentry was just enabled.
   lastHref = null;
   lastHandledVideo = null;
   onNavigate();

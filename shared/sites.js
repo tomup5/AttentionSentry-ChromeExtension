@@ -1,4 +1,4 @@
-// Sites Attention Guard can block, shared by the popup, the background worker, and the blocked page.
+// Sites Attention Sentry can block, shared by the popup, the background worker, and the blocked page.
 // Each site lists every domain it's served from; subdomains are covered automatically.
 
 const BLOCKABLE_SITES = {

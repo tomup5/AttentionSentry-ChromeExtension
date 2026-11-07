@@ -31,14 +31,23 @@ function pageUrl(href = location.href) {
   return url.origin + url.pathname;
 }
 
+// decodeURIComponent throws on malformed escapes like "%E0%A4".
+function safeDecode(text) {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return text;
+  }
+}
+
 function articleTitle() {
   const heading = document.querySelector(SELECTORS.heading)?.textContent.trim();
   if (heading) return heading;
-  return decodeURIComponent(location.pathname.split("/wiki/")[1] ?? "").replace(/_/g, " ");
+  return safeDecode(location.pathname.split("/wiki/")[1] ?? "").replace(/_/g, " ");
 }
 
 function isArticleLink(link) {
-  const path = decodeURIComponent(link.pathname);
+  const path = safeDecode(link.pathname);
   return link.origin === location.origin && path.startsWith("/wiki/") && !path.slice(6).includes(":");
 }
 
@@ -233,7 +242,7 @@ async function onSaveClick() {
   session.set("tangentExplained", true);
   showToast({
     title: `Saved "${title}" for later`,
-    body: "Find it in the Attention Guard popup when you're done studying.",
+    body: "Find it in the Attention Sentry popup when you're done studying.",
     technique: first ? TECHNIQUES.saveForLater : null,
     duration: first ? 12000 : 4000
   });

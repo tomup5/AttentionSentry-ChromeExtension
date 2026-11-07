@@ -2,14 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Attention Guard</title>
+    <title>Attention Sentry: Study Without Distraction</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <div class="view" id="main-view">
       <header class="header">
         <div class="header-title">
-          <h1>Attention Guard</h1>
+          <h1>Attention Sentry</h1>
           <p class="status" id="status-text">Off</p>
         </div>
         <button class="icon-button" id="open-settings" title="Settings" aria-label="Settings">
@@ -30,8 +30,8 @@
             />
           </svg>
         </button>
-        <label class="switch" title="Turn Attention Guard on or off">
-          <input type="checkbox" id="studyMode" aria-label="Attention Guard" />
+        <label class="switch" title="Turn Attention Sentry on or off">
+          <input type="checkbox" id="studyMode" aria-label="Attention Sentry" />
           <span class="slider"></span>
         </label>
       </header>
@@ -98,7 +98,7 @@
               <p class="form-error" id="add-site-error" hidden></p>
 
               <p class="site-access" id="site-access" hidden>
-                Some sites show Chrome's error page instead of the Attention Guard page.
+                Some sites show Chrome's error page instead of the Attention Sentry page.
                 <button class="text-button" id="allow-access" type="button">Allow access</button>
               </p>
             </div>

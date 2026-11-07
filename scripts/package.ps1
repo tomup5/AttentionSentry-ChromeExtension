@@ -9,7 +9,7 @@ Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $root = Split-Path -Parent $PSScriptRoot
 $version = (Get-Content "$root/manifest.json" -Raw | ConvertFrom-Json).version
 $dist = Join-Path $root "dist"
-$zipPath = Join-Path $dist "attention-guard-$version.zip"
+$zipPath = Join-Path $dist "attention-sentry-$version.zip"
 
 New-Item -ItemType Directory -Force $dist | Out-Null
 if (Test-Path $zipPath) { Remove-Item $zipPath }

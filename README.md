@@ -1,10 +1,10 @@
-# Attention Guard
+# Attention Sentry: Study Without Distraction
 
-A Chrome extension that calls out the attention-capturing design patterns on YouTube, Reddit, Wikipedia, Discord, and The New York Times (infinite scroll, autoplay, social-proof metrics, link rabbit holes, unread badges, daily games) while you study, and explains each one as it intervenes.
+A Chrome extension for studying on YouTube, Reddit, Wikipedia, Discord, and The New York Times. When one of these sites uses a design pattern meant to hold your attention, like infinite scroll, autoplay, view counts, or daily games, the extension steps in and tells you which pattern it is.
 
-Most focus tools block sites or track screen time. Attention Guard targets the *design* instead: every intervention names the specific pattern it's responding to and cites the HCI research behind it, so users learn to recognize these patterns on their own.
+The idea is that once you know what these patterns look like, you start noticing them yourself. The explanations are based on HCI research on dark patterns and attention capture (listed under Background).
 
-<!-- Add a screenshot or GIF here, e.g. ![Attention Guard overlay on YouTube](docs/screenshot.png) -->
+<!-- Add a screenshot or GIF here, e.g. ![Attention Sentry overlay on YouTube](docs/screenshot.png) -->
 
 ## Features
 
@@ -58,9 +58,9 @@ Each site has its own switch and collapsible section in the popup. Features that
 | **Pause** | Modal overlays that pause playback, with short countdowns before you can continue. |
 | **Block** | Removes the pattern: hides the sidebar, end screens, and Shorts shelves, and stops the feed from loading more. |
 
-The main switch in the popup can always turn Attention Guard off, even in Block mode.
+The main switch in the popup can always turn Attention Sentry off, even in Block mode.
 
-**Distracting-site blocker.** While Attention Guard is on, the sites you pick (TikTok, Instagram, Snapchat, X, Facebook, Tumblr, Twitch, Netflix, Pinterest, plus any you add) open an Attention Guard page instead. The strictness level decides how hard they are to get past: Hint offers an "Open anyway" button, Pause makes you wait 15 seconds first, and Block keeps them closed until Attention Guard is off. An unlocked site stays open for 5 minutes.
+**Distracting-site blocker.** While Attention Sentry is on, the sites you pick (TikTok, Instagram, Snapchat, X, Facebook, Tumblr, Twitch, Netflix, Pinterest, plus any you add) open an Attention Sentry page instead. The strictness level decides how hard they are to get past: Hint offers an "Open anyway" button, Pause makes you wait 15 seconds first, and Block keeps them closed until Attention Sentry is off. An unlocked site stays open for 5 minutes.
 
 The settings page (gear icon in the popup) changes the font and background color used by the popup and every on-page prompt. It offers eight fonts, five color themes plus an automatic light or dark theme (which follows each site's own dark mode), eight accent colors, and three text sizes.
 
@@ -71,7 +71,7 @@ While you study, the popup shows a summary of the current tab's session on a sup
 1. Clone this repository.
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Click **Load unpacked** and select the project folder.
-4. Open the extension popup, turn on Attention Guard, and visit one of the supported sites.
+4. Open the extension popup, turn on Attention Sentry, and visit one of the supported sites.
 
 ## Architecture
 
@@ -100,7 +100,7 @@ These sites change their markup regularly. Selectors each script depends on are 
 
 ## Privacy
 
-Attention Guard makes no network requests and collects no data. Its scripts run only on YouTube, Reddit, Wikipedia, Discord, and nytimes.com. Site blocking uses `declarativeNetRequest`, so Chrome does the blocking without the extension reading those pages; access to the blocked sites is optional and requested only for the sites you choose. Settings live in `chrome.storage.sync`. Per-tab session state (your stated intention, videos and articles opened, your Wikipedia trail) lives in `chrome.storage.session`, not the page's `sessionStorage`, so the sites' own scripts can't read it, and it's cleared when the tab closes. Saved Wikipedia links and Discord study channels stay in `chrome.storage.local` on your device. See the full [privacy policy](PRIVACY.md).
+Attention Sentry makes no network requests and collects no data. Its scripts run only on YouTube, Reddit, Wikipedia, Discord, and nytimes.com. Site blocking uses `declarativeNetRequest`, so Chrome does the blocking without the extension reading those pages; access to the blocked sites is optional and requested only for the sites you choose. Settings live in `chrome.storage.sync`. Per-tab session state (your stated intention, videos and articles opened, your Wikipedia trail) lives in `chrome.storage.session`, not the page's `sessionStorage`, so the sites' own scripts can't read it, and it's cleared when the tab closes. Saved Wikipedia links and Discord study channels stay in `chrome.storage.local` on your device. See the full [privacy policy](PRIVACY.md).
 
 ## Background
 
@@ -108,9 +108,8 @@ Built for ENGL 4010 at Saint Louis University. The pattern explanations draw on:
 
 - Mildner, T., et al. "About Engaging and Governing Strategies: A Thematic Analysis of Dark Patterns in Social Networking Services." *CHI '23*. https://doi.org/10.1145/3544548.3580695
 - Monge Roffarello, A., et al. "Defining and Identifying Attention Capture Deceptive Designs in Digital Interfaces." *CHI '23*. https://doi.org/10.1145/3544548.3580729
-- Lydon-Staley, D. M., Zhou, D., Blevins, A. S., Zurn, P., & Bassett, D. S. "Hunters, Busybodies and the Knowledge Network Building Associated with Deprivation Curiosity." *Nature Human Behaviour* 5, 2021.
-- Masicampo, E. J., & Baumeister, R. F. "Consider It Done! Plan Making Can Eliminate the Cognitive Effects of Unfulfilled Goals." *Journal of Personality and Social Psychology* 101(4), 2011.
-- Zagal, J. P., Björk, S., & Lewis, C. "Dark Patterns in the Design of Games." *Foundations of Digital Games (FDG) 2013*.
+- Ambrosi, Dino. "The Battle for Your Time: Exposing the Costs of Social Media." TEDx Talks, 2023. https://www.youtube.com/watch?v=4TMPXK9tw5U
+- Friends of Attention. *Attensity! A Manifesto of the Attention Liberation Movement*. Edited by D. Graham Burnett et al., Crown, 2026.
 - Zhao, L. "Social Media Multitasking and College Students' Academic Performance." *Psychology in the Schools* 60(9), 2023. https://doi.org/10.1002/pits.22912
 
 ## License

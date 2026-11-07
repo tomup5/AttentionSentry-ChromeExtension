@@ -26,7 +26,7 @@ function whyLine(technique) {
     { class: "sm-why" },
     el("strong", { text: `${technique.name}. ` }),
     technique.why,
-    el("span", { class: "sm-source", text: technique.source })
+    technique.source && el("span", { class: "sm-source", text: technique.source })
   );
 }
 
@@ -86,7 +86,7 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
   const card = el(
     "div",
     { class: "sm-card", role: "dialog", "aria-modal": "true" },
-    el("div", { class: "sm-label", text: "Attention Guard" }),
+    el("div", { class: "sm-label", text: "Attention Sentry" }),
     el("h2", { text: title }),
     body ? el("p", { class: "sm-body", text: body }) : null,
     content || null,

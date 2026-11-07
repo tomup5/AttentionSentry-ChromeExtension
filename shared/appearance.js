@@ -2,6 +2,12 @@
 // Fonts are bundled rather than loaded from a CDN so the extension makes no network requests.
 
 const FONTS = {
+  russoOne: {
+    label: "Russo One",
+    uppercase: true,
+    stack: '"SM Russo One", system-ui, sans-serif',
+    faces: [{ file: "russo-one.woff2", weight: "400" }]
+  },
   system: {
     label: "System default",
     stack: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
@@ -50,6 +56,17 @@ const FONTS = {
 };
 
 const THEMES = {
+  burntOrange: {
+    label: "Burnt Orange",
+    bg: "#e2702e",
+    text: "#1f130a",
+    muted: "#4a2410",
+    border: "#c25a1f",
+    accent: "#3a1d0b",
+    onAccent: "#ffffff",
+    // Translucent white laid over bars and controls so they lift off the orange.
+    tint: "rgba(255, 255, 255, 0.18)"
+  },
   light: {
     label: "White",
     bg: "#fdfcfa",
@@ -150,7 +167,9 @@ function applyAppearance(el, appearance, prefersDark, prefix) {
   for (const key of ["bg", "text", "muted", "border", "accent", "onAccent"]) {
     el.style.setProperty(`--${prefix}${key}`, palette[key]);
   }
+  el.style.setProperty(`--${prefix}tint`, palette.tint ?? "transparent");
   el.style.setProperty(`--${prefix}font`, font.stack);
+  el.style.setProperty(`--${prefix}transform`, font.uppercase ? "uppercase" : "none");
   el.style.setProperty(`--${prefix}scale`, scale);
   applyFontFaces(el.ownerDocument, font);
   return palette;

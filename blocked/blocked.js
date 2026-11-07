@@ -6,7 +6,7 @@ const UNLOCK_COUNTDOWN = 15; // seconds before the unlock button works, in Pause
 const BODY = {
   hint: `You can still open it, and it'll stay open for ${UNLOCK_MINUTES} minutes.`,
   pause: `If you still need it after a short wait, you can open it for ${UNLOCK_MINUTES} minutes.`,
-  block: "It opens again when you turn Attention Guard off."
+  block: "It opens again when you turn Attention Sentry off."
 };
 
 const blockedUrl = parseBlockedUrl(location.hash.slice(1));
@@ -46,7 +46,7 @@ async function render() {
   }
 
   const label = site?.label ?? "This site";
-  document.title = `${label} blocked · Attention Guard`;
+  document.title = `${label} blocked · Attention Sentry`;
 
   closeOverlay();
   showOverlay({

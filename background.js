@@ -20,7 +20,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   // Sent by the blocked page's "Open anyway" / "Open for 5 minutes" button.
-  if (message.type === "unlockSite") {
+  // Only that page may unlock, not the content scripts running inside other sites.
+  if (message.type === "unlockSite" && sender.url?.startsWith(BLOCKED_PAGE)) {
     unlockSite(message.siteId).then(sendResponse);
     return true;
   }

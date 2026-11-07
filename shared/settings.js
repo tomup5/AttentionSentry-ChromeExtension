@@ -4,6 +4,8 @@
 const DEFAULT_SETTINGS = {
   studyMode: false,
   mode: "hint", // "hint" | "pause" | "block"
+  // Order of the popup's site sections, top to bottom. Chosen with the arrows in each header.
+  sectionOrder: ["youtube", "reddit", "wikipedia", "discord", "nyt", "siteBlock"],
   // Each site has an `enabled` switch (the one in its popup header) plus its features.
   youtube: {
     enabled: true,
@@ -52,8 +54,8 @@ const DEFAULT_SETTINGS = {
   },
   appearance: {
     // Keys of the option maps in appearance.js.
-    font: "system",
-    background: "auto",
+    font: "russoOne",
+    background: "burntOrange",
     accent: "theme",
     textSize: "default"
   }
@@ -65,7 +67,7 @@ function mergeSettings(saved) {
   saved = saved || {};
   const merged = { ...DEFAULT_SETTINGS, ...saved };
   for (const [key, defaults] of Object.entries(DEFAULT_SETTINGS)) {
-    if (typeof defaults === "object") merged[key] = { ...defaults, ...(saved[key] || {}) };
+    if (typeof defaults === "object" && !Array.isArray(defaults)) merged[key] = { ...defaults, ...(saved[key] || {}) };
   }
   return merged;
 }

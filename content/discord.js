@@ -96,7 +96,7 @@ function renderChannelBadge() {
     });
   } else {
     showBadge({
-      label: "Attention Guard",
+      label: "Attention Sentry",
       text: "Mark as study channel",
       title: "Treat this channel as part of your studying",
       onClick: markStudyChannel,
@@ -224,7 +224,7 @@ function applyAll() {
 
   if (settings.discord.hideBadges) explainBadgesOnce();
 
-  // Force the page logic to re-run in case Attention Guard was just enabled.
+  // Force the page logic to re-run in case Attention Sentry was just enabled.
   lastHref = null;
   onNavigate();
 }

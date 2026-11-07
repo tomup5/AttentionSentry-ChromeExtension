@@ -75,16 +75,14 @@ const TECHNIQUES = {
     why:
       "Every article is full of links and each one is an easy jump. " +
       "Hop between loosely related pages and you end up with a wide, shallow trail " +
-      "when studying needs a deep one.",
-    source: "Lydon-Staley et al., Nature Human Behaviour 2021"
+      "when studying needs a deep one."
   },
 
   saveForLater: {
     name: "Saving a tangent",
     why:
       "An unfinished thought keeps nagging at you. Writing down that you'll " +
-      "come back to it is usually enough to let it go for now.",
-    source: "Masicampo & Baumeister, JPSP 2011"
+      "come back to it is usually enough to let it go for now."
   },
 
   // --- Discord ---
@@ -111,8 +109,7 @@ const TECHNIQUES = {
     name: "Daily games and streaks",
     why:
       "A new puzzle every day and a streak to protect make a game feel like an appointment. " +
-      "Missing a day feels like a loss, so 'just one' mid-study is easy to justify.",
-    source: "Zagal et al., FDG 2013"
+      "Missing a day feels like a loss, so 'just one' mid-study is easy to justify."
   },
 
   recirculation: {

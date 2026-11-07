@@ -6,7 +6,7 @@
 let settings = null;
 let siteKey = null; // this site's key in settings, e.g. "reddit"
 
-// Attention Guard is on and this site's switch in the popup is on.
+// Attention Sentry is on and this site's switch in the popup is on.
 function siteActive() {
   return Boolean(settings?.studyMode && settings[siteKey].enabled);
 }
@@ -192,7 +192,7 @@ function showIntentionScreen(config) {
         { label: "Continue anyway", countdown: 10, onClick: () => accept(reason) }
       ]);
     } else {
-      // Block: no way through except turning Attention Guard off in the popup.
+      // Block: no way through except turning Attention Sentry off in the popup.
       overlay.setButtons([{ label: "Back to studying", primary: true, onClick: goBack }]);
     }
   }

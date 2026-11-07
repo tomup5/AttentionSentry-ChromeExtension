@@ -4,7 +4,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 
 ## Store listing
 
-**Name:** Attention Guard
+**Name:** Attention Sentry: Study Without Distraction
 
 **Summary** (max 132 characters):
 
@@ -14,9 +14,9 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 
 **Description:**
 
-> Attention Guard helps you stay on task on YouTube, Reddit, Wikipedia, Discord, and The New York Times by pointing out the design tricks built to keep you there, and explaining each one as it steps in.
+> Attention Sentry is for studying on YouTube, Reddit, Wikipedia, Discord, and The New York Times. These sites are full of features meant to keep you on them longer, like infinite scroll, autoplay, vote counts, and daily-game streaks. When you run into one, the extension steps in and tells you what it is and why it works.
 >
-> Instead of just blocking sites, every intervention names the pattern it's responding to (infinite scroll, autoplay, vote counts, link rabbit holes, unread badges, daily-game streaks) and cites the research behind it, so you learn to recognize these patterns on your own.
+> The explanations are based on HCI research, and after a while you start spotting these patterns yourself.
 >
 > YOUTUBE
 > • Intention check: asks why you're opening YouTube and keeps your answer pinned as a reminder
@@ -58,7 +58,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 
 **Single purpose:**
 
-> Reduces distraction while studying: on YouTube, Reddit, Wikipedia, Discord, and The New York Times by hiding engagement metrics and recommendations, limiting autoplay, endless feeds, and link rabbit holes, and explaining the attention-capturing design patterns it intervenes on; elsewhere by blocking the social media and streaming sites the user chooses while Attention Guard is on.
+> Reduces distraction while studying: on YouTube, Reddit, Wikipedia, Discord, and The New York Times by hiding engagement metrics and recommendations, limiting autoplay, endless feeds, and link rabbit holes, and explaining the attention-capturing design patterns it intervenes on; elsewhere by blocking the social media and streaming sites the user chooses while Attention Sentry is on.
 
 **Permission justifications:**
 
@@ -66,7 +66,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 |---|---|
 | `storage` | Saves the user's settings, a flag for a one-time explanation message, and per-tab session state (the user's stated reason for visiting, which videos they've opened, and time spent, used for reminders and the session summary). Session state is cleared when the tab closes. |
 | Host permissions `https://www.youtube.com/*`, `https://www.reddit.com/*`, `https://old.reddit.com/*`, `https://*.wikipedia.org/*`, `https://discord.com/*`, `https://www.nytimes.com/*` | Content scripts run only on these sites to hide engagement counts, recommendation modules, and unread badges, show reminder overlays, and (on YouTube) turn off autoplay. They do not run on any other site. |
-| `declarativeNetRequest` | Blocks main-frame loads of the sites the user chose to block, only while Attention Guard and site blocking are on. Rules are built from the user's list; no browsing data is read or stored. |
+| `declarativeNetRequest` | Blocks main-frame loads of the sites the user chose to block, only while Attention Sentry and site blocking are on. Rules are built from the user's list; no browsing data is read or stored. |
 | `alarms` | Ends a temporary unlock: when a user opens a blocked site for 5 minutes, an alarm re-blocks it afterwards. |
 | Optional host permissions `*://*/*` | Requested at runtime only for the specific sites the user chooses to block. Needed to redirect those sites to the extension's "blocked" page (instead of Chrome's error page) and to move already-open tabs on them there. No content scripts run on these sites. |
 
@@ -83,4 +83,4 @@ Certify all three statements:
 - I do not use or transfer user data for purposes that are unrelated to my item's single purpose.
 - I do not use or transfer user data to determine creditworthiness or for lending purposes.
 
-**Privacy policy URL:** link to `PRIVACY.md` in the GitHub repository, e.g. `https://github.com/<username>/attention-guard/blob/main/PRIVACY.md`.
+**Privacy policy URL:** link to `PRIVACY.md` in the GitHub repository, e.g. `https://github.com/<username>/attention-sentry/blob/main/PRIVACY.md`.

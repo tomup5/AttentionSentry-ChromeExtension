@@ -20,6 +20,7 @@ const SITE_SECTIONS = [
   {
     key: "youtube",
     name: "YouTube",
+    icon: "youtube",
     features: [
       { key: "intention", title: "Intention check", desc: "Ask why you're opening YouTube before it loads." },
       {
@@ -40,6 +41,7 @@ const SITE_SECTIONS = [
   {
     key: "reddit",
     name: "Reddit",
+    icon: "reddit",
     features: [
       { key: "intention", title: "Intention check", desc: "Ask why you're here when you open the home or Popular feed." },
       { key: "hideMetrics", title: "Hide metrics", desc: "Hide upvotes, comment counts, members, and karma." },
@@ -55,6 +57,7 @@ const SITE_SECTIONS = [
   {
     key: "wikipedia",
     name: "Wikipedia",
+    icon: "wikipedia",
     features: [
       {
         key: "rabbitHole",
@@ -75,6 +78,7 @@ const SITE_SECTIONS = [
   {
     key: "discord",
     name: "Discord",
+    icon: "discord",
     features: [
       {
         key: "studyChannels",
@@ -88,6 +92,7 @@ const SITE_SECTIONS = [
   {
     key: "nyt",
     name: "New York Times",
+    icon: "nyt",
     features: [
       { key: "intention", title: "Intention check", desc: "Ask why you're here when you open the front page." },
       { key: "games", title: "Games check", desc: "Step in before Wordle, Connections, and other games." },
@@ -106,7 +111,7 @@ const SITE_SECTIONS = [
 const SITE_MODE_NOTES = {
   hint: "Blocked sites show a reminder with an Open anyway button.",
   pause: `Blocked sites can open for ${UNLOCK_MINUTES} minutes after a short wait.`,
-  block: "Blocked sites stay closed until you turn Attention Guard off."
+  block: "Blocked sites stay closed until you turn Attention Sentry off."
 };
 
 // Keeps the settings object well under chrome.storage.sync's per-item size limit.
@@ -251,6 +256,7 @@ function buildSiteSections() {
         "button",
         { class: "site-toggle", type: "button", "aria-expanded": "false" },
         chevron.cloneNode(true),
+        el("img", { class: "site-icon", src: `../icons/sites/${site.icon}.png`, alt: "" }),
         el("span", { class: "site-name", text: site.name }),
         el("span", { class: "count" })
       ),
@@ -263,6 +269,75 @@ function buildSiteSections() {
     blockerSection.before(el("section", { class: "section site", "data-section": site.key }, head, body));
   }
   featureInputs = document.querySelectorAll("[data-setting]");
+
+  // Up and down arrows in every section header, just before its switch.
+  for (const section of document.querySelectorAll("[data-section]")) {
+    const key = section.dataset.section;
+    const name = section.querySelector(".site-name").textContent;
+    const arrow = (dir, label, d) =>
+      el("button", { class: "move-button", type: "button", "data-dir": dir, title: label, "aria-label": `${label}: ${name}` }, moveIcon(d));
+    const move = el(
+      "div",
+      { class: "move" },
+      arrow("-1", "Move up", "M6 15l6-6 6 6"),
+      arrow("1", "Move down", "M6 9l6 6 6-6")
+    );
+    move.addEventListener("click", (e) => {
+      const button = e.target.closest(".move-button");
+      if (button) moveSection(key, Number(button.dataset.dir));
+    });
+    section.querySelector(".site-head .switch").before(move);
+  }
+}
+
+function moveIcon(d) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "12");
+  svg.setAttribute("height", "12");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(ns, "path");
+  for (const [attr, value] of Object.entries({
+    d,
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "2.4",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })) {
+    path.setAttribute(attr, value);
+  }
+  svg.append(path);
+  return svg;
+}
+
+// The saved order, minus keys that no longer exist, plus any new sections at the end.
+function currentOrder() {
+  const keys = [...SITE_SECTIONS.map((s) => s.key), "siteBlock"];
+  const saved = Array.isArray(settings.sectionOrder) ? settings.sectionOrder : [];
+  return [...saved.filter((k, i) => keys.includes(k) && saved.indexOf(k) === i), ...keys.filter((k) => !saved.includes(k))];
+}
+
+function moveSection(key, dir) {
+  const order = currentOrder();
+  const from = order.indexOf(key);
+  const to = from + dir;
+  if (to < 0 || to >= order.length) return;
+  [order[from], order[to]] = [order[to], order[from]];
+  settings.sectionOrder = order;
+  update();
+}
+
+// Puts the sections in the saved order and disables the arrows at either end.
+function renderOrder() {
+  const order = currentOrder();
+  order.forEach((key, i) => {
+    const section = document.querySelector(`[data-section="${key}"]`);
+    controls.append(section);
+    section.querySelector('[data-dir="-1"]').disabled = i === 0;
+    section.querySelector('[data-dir="1"]').disabled = i === order.length - 1;
+  });
 }
 
 // --- Rendering ---
@@ -296,6 +371,7 @@ function render() {
     section.querySelector(".site-body").classList.toggle("disabled", !enabled);
   }
 
+  renderOrder();
   renderSites();
   renderAppearance();
 }
@@ -373,7 +449,7 @@ function removeButton(label, onclick) {
   });
 }
 
-// Ask for access to the sites so they can be redirected to the Attention Guard page.
+// Ask for access to the sites so they can be redirected to the Attention Sentry page.
 // Must be called straight from a click handler: Chrome only shows the prompt
 // in response to a user gesture. The popup may close while the prompt is open,
 // so callers save their settings first.

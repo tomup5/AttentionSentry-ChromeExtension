@@ -20,6 +20,7 @@ html.sm-noscroll {
   --sm-accent: #2c5f78;
   --sm-onAccent: #ffffff;
   --sm-scale: 1;
+  --sm-transform: none;
   --sm-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -31,6 +32,7 @@ html.sm-noscroll {
 #sm-save-link {
   box-sizing: border-box;
   font-family: var(--sm-font);
+  text-transform: var(--sm-transform);
   font-size: calc(14px * var(--sm-scale));
   line-height: 1.45;
   color: var(--sm-text);
@@ -108,8 +110,9 @@ html.sm-noscroll {
   width: 100%;
   padding: 8px 10px;
   font: inherit;
+  text-transform: inherit;
   color: var(--sm-text);
-  background: var(--sm-bg);
+  background: linear-gradient(var(--sm-tint, transparent), var(--sm-tint, transparent)), var(--sm-bg);
   border: 1px solid var(--sm-border);
   border-radius: 4px;
 }
@@ -129,6 +132,7 @@ html.sm-noscroll {
 .sm-btn {
   padding: 8px 14px;
   font: inherit;
+  text-transform: inherit;
   font-weight: 500;
   border: 1px solid var(--sm-border);
   border-radius: 4px;

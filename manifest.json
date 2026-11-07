@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Attention Guard",
+  "name": "Attention Sentry: Study Without Distraction",
   "version": "1.0.0",
   "description": "Points out the attention-grabbing tricks websites use while you study.",
   "minimum_chrome_version": "105",
@@ -17,7 +17,7 @@
   },
 
   "action": {
-    "default_title": "Attention Guard",
+    "default_title": "Attention Sentry: Study Without Distraction",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
