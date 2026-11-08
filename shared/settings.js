@@ -67,7 +67,8 @@ function mergeSettings(saved) {
   saved = saved || {};
   const merged = { ...DEFAULT_SETTINGS, ...saved };
   for (const [key, defaults] of Object.entries(DEFAULT_SETTINGS)) {
-    if (typeof defaults === "object" && !Array.isArray(defaults)) merged[key] = { ...defaults, ...(saved[key] || {}) };
+    if (typeof defaults === "object" && !Array.isArray(defaults))
+      merged[key] = { ...defaults, ...(saved[key] || {}) };
   }
   return merged;
 }
@@ -79,4 +80,14 @@ async function loadSettings() {
 
 async function saveSettings(settings) {
   await chrome.storage.sync.set({ settings });
+}
+
+// Saves `draft`. Returns the settings now in effect, and the error if the save failed.
+async function persistSettings(draft) {
+  try {
+    await saveSettings(draft);
+    return { settings: draft, error: null };
+  } catch (error) {
+    return { settings: await loadSettings(), error };
+  }
 }

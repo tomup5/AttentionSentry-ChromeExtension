@@ -31,7 +31,7 @@ async function isUnlocked(site) {
 }
 
 function applyTheme() {
-  applyAppearance(document.documentElement, settings.appearance, prefersDark.matches, "sm-");
+  applyAppearance(document, settings.appearance, prefersDark.matches, "sm-");
 }
 
 async function render() {

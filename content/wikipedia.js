@@ -61,35 +61,48 @@ function recentNavigation(key) {
   return entry && Date.now() - entry.at < NAVIGATION_WINDOW_MS ? entry : null;
 }
 
+// The trail after arriving at `here`, and whether that was a step further along it.
+// Each page stores its hop number, because long trails drop their middle pages
+// and the trail's length then understates how far you've gone.
+function advanceTrail(trail, here, followedLink) {
+  const onTrail = trail.findIndex((page) => page.url === here.url);
+  if (onTrail !== -1) return { trail: trail.slice(0, onTrail + 1), moved: false }; // back, or reload
+  if (!followedLink) return { trail: [{ ...here, hop: 0 }], moved: false };
+
+  const next = [...trail, { ...here, hop: hopsAlong(trail) + 1 }];
+  if (next.length > TRAIL_MAX) next.splice(1, next.length - TRAIL_MAX);
+  return { trail: next, moved: true };
+}
+
+function hopsAlong(trail) {
+  return trail[trail.length - 1]?.hop ?? 0;
+}
+
+// Block checks in on every link past the limit; Hint and Pause every `limit` links.
+function isCheckInDue(hops, limit, mode) {
+  if (hops < limit) return false;
+  return mode === "block" || (hops - limit) % limit === 0;
+}
+
 function updateTrail() {
   const here = { title: articleTitle(), url: pageUrl() };
-  let trail = session.get("trail", []);
+  const trail = session.get("trail", []);
   const last = trail[trail.length - 1];
-  const onTrail = trail.findIndex((page) => page.url === here.url);
 
   // Wikipedia usually sends only its origin as the referrer, so a recorded
   // link click is the main signal; a full referrer is used when there is one.
   const clicked = recentNavigation("clickedLink");
-  const followedLink =
+  const followedLink = Boolean(
     last &&
     !recentNavigation("searched") &&
-    ((clicked && clicked.from === last.url) || pageUrl(document.referrer || "/") === last.url);
+    ((clicked && clicked.from === last.url) || pageUrl(document.referrer || "/") === last.url)
+  );
 
-  let moved = false;
-  if (onTrail !== -1) {
-    trail = trail.slice(0, onTrail + 1); // went back, or reloaded
-  } else if (followedLink) {
-    trail.push(here);
-    if (trail.length > TRAIL_MAX) trail.splice(1, trail.length - TRAIL_MAX);
-    moved = true;
-  } else {
-    trail = [here];
-  }
-
-  session.set("trail", trail);
+  const result = advanceTrail(trail, here, followedLink);
+  session.set("trail", result.trail);
   session.set("clickedLink", null);
   session.set("searched", null);
-  return { trail, moved };
+  return result;
 }
 
 function trailElement(trail) {
@@ -106,13 +119,16 @@ function goTo(url) {
 
 function startNewTopic() {
   const trail = session.get("trail", []);
-  session.set("trail", trail.slice(-1));
+  session.set(
+    "trail",
+    trail.slice(-1).map((page) => ({ ...page, hop: 0 }))
+  );
   closeOverlay();
   renderTopicBadge();
 }
 
 function nudge(trail) {
-  const hops = trail.length - 1;
+  const hops = hopsAlong(trail);
   const start = trail[0];
   const here = trail[trail.length - 1];
   const reminder = intentionText() ?? `You started at "${start.title}".`;
@@ -159,11 +175,8 @@ function handleArticle() {
   const { trail, moved } = updateTrail();
   renderTopicBadge();
 
-  const hops = trail.length - 1;
-  const limit = settings.wikipedia.hopLimit;
-  if (!settings.wikipedia.rabbitHole || !moved || hops < limit || isOverlayOpen()) return;
-  // Block checks in on every link past the limit; Hint and Pause every `limit` links.
-  if (settings.mode === "block" || (hops - limit) % limit === 0) nudge(trail);
+  if (!settings.wikipedia.rabbitHole || !moved || isOverlayOpen()) return;
+  if (isCheckInDue(hopsAlong(trail), settings.wikipedia.hopLimit, settings.mode)) nudge(trail);
 }
 
 // Bottom-left link back to the first page of the trail, once you've left it.

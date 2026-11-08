@@ -44,6 +44,9 @@ const session = {
     this.save();
   },
   save() {
+    // After the extension is reloaded or updated, scripts left in open tabs lose
+    // access to chrome.* and the call below would throw instead of rejecting.
+    if (!chrome.runtime?.id) return;
     chrome.storage.session.set({ [this.storageKey]: this.all }).catch(() => {
       // Quota or context errors only cost persistence across reloads.
     });
@@ -295,7 +298,7 @@ async function startSite({ site, apply, onNavigate, isDark }) {
   isDark ??= () => matchMedia("(prefers-color-scheme: dark)").matches;
 
   function applyAll() {
-    applyAppearance(document.documentElement, settings.appearance, isDark(), "sm-");
+    applyAppearance(document, settings.appearance, isDark(), "sm-");
     apply();
   }
 

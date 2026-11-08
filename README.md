@@ -62,7 +62,7 @@ The main switch in the popup can always turn Attention Sentry off, even in Block
 
 **Distracting-site blocker.** While Attention Sentry is on, the sites you pick (TikTok, Instagram, Snapchat, X, Facebook, Tumblr, Twitch, Netflix, Pinterest, plus any you add) open an Attention Sentry page instead. The strictness level decides how hard they are to get past: Hint offers an "Open anyway" button, Pause makes you wait 15 seconds first, and Block keeps them closed until Attention Sentry is off. An unlocked site stays open for 5 minutes.
 
-The settings page (gear icon in the popup) changes the font and background color used by the popup and every on-page prompt. It offers eight fonts, five color themes plus an automatic light or dark theme (which follows each site's own dark mode), eight accent colors, and three text sizes.
+The settings page (gear icon in the popup) changes the font and background color used by the popup and every on-page prompt. It offers nine fonts, six color themes plus an automatic light or dark theme (which follows each site's own dark mode), eight accent colors, and three text sizes.
 
 While you study, the popup shows a summary of the current tab's session on a supported site: your stated goal, how many videos or articles you've opened, and how long the tab has been on screen.
 

@@ -148,6 +148,7 @@ const addSiteForm = document.getElementById("add-site");
 const addSiteInput = document.getElementById("add-site-input");
 const addSiteError = document.getElementById("add-site-error");
 const siteAccess = document.getElementById("site-access");
+const saveError = document.getElementById("save-error");
 
 // Filled in by buildSiteSections().
 // Each [data-setting] input maps to settings[site][key], written "site.key".
@@ -532,7 +533,7 @@ async function removeStudyChannel(channel) {
 
 function renderAppearance() {
   const { appearance } = settings;
-  const palette = applyAppearance(document.documentElement, appearance, prefersDark.matches, "");
+  const palette = applyAppearance(document, appearance, prefersDark.matches, "");
   document.documentElement.style.colorScheme = palette.dark ? "dark" : "light";
 
   fontSelect.value = appearance.font;
@@ -601,8 +602,12 @@ function formatDuration(minutes) {
 
 // --- Saving ---
 
+// A failed save (usually a chrome.storage.sync quota) puts the popup back in step
+// with what's actually stored, so it never shows a change that didn't happen.
 async function update() {
-  await saveSettings(settings);
+  const { settings: current, error } = await persistSettings(settings);
+  settings = current;
+  saveError.hidden = !error;
   render();
 }
 

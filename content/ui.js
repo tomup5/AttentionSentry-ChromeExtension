@@ -1,7 +1,8 @@
 // Site-agnostic on-page UI: toasts and modal overlays.
 // All class names and IDs are prefixed "sm-" to avoid clashing with the host page.
 
-// --- DOM helper ---
+const TOAST_DURATION_MS = 12000;
+const FOCUSABLE = "button:not(:disabled), select, input, a[href]";
 
 // el("p", { class: "x", text: "hi", onclick: fn }, child1, child2)
 // Text is always set via textContent, so user input is never parsed as HTML.
@@ -35,13 +36,13 @@ function whyLine(technique) {
 function getToastStack() {
   let stack = document.getElementById("sm-toast-stack");
   if (!stack) {
-    stack = el("div", { id: "sm-toast-stack" });
+    stack = el("div", { id: "sm-toast-stack", role: "status" });
     document.body.append(stack);
   }
   return stack;
 }
 
-function showToast({ title, body, technique, duration = 12000 }) {
+function showToast({ title, body, technique, duration = TOAST_DURATION_MS }) {
   const toast = el(
     "div",
     { class: "sm-toast" },
@@ -69,6 +70,21 @@ function blockPlayback(event) {
   event.target.pause();
 }
 
+// Wraps a Tab keypress around the controls in `container`.
+function keepFocusInside(event, container) {
+  const controls = [...container.querySelectorAll(FOCUSABLE)];
+  const position = controls.indexOf(document.activeElement);
+  if (!controls.length) {
+    event.preventDefault();
+  } else if (event.shiftKey && position <= 0) {
+    event.preventDefault();
+    controls[controls.length - 1].focus();
+  } else if (!event.shiftKey && position === controls.length - 1) {
+    event.preventDefault();
+    controls[0].focus();
+  }
+}
+
 /**
  * Show a full-screen modal overlay.
  *   title, body, technique: text content
@@ -85,9 +101,15 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
   const buttonRow = el("div", { class: "sm-buttons" });
   const card = el(
     "div",
-    { class: "sm-card", role: "dialog", "aria-modal": "true" },
+    {
+      class: "sm-card",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "sm-overlay-title",
+      tabindex: "-1"
+    },
     el("div", { class: "sm-label", text: "Attention Sentry" }),
-    el("h2", { text: title }),
+    el("h2", { id: "sm-overlay-title", text: title }),
     body ? el("p", { class: "sm-body", text: body }) : null,
     content || null,
     buttonRow,
@@ -95,9 +117,14 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
   );
   const root = el("div", { class: "sm-overlay" }, card);
 
-  // Keep YouTube's keyboard shortcuts (k, f, j...) from firing while typing in the overlay.
-  root.addEventListener("keydown", (e) => e.stopPropagation());
+  // Keep the site's keyboard shortcuts (YouTube's k, f, j...) from firing behind the
+  // overlay, and keep Tab inside it, since everything behind it is unreachable.
+  root.addEventListener("keydown", (e) => {
+    e.stopPropagation();
+    if (e.key === "Tab") keepFocusInside(e, card);
+  });
 
+  const previousFocus = document.activeElement;
   const timers = [];
 
   function setButtons(list) {
@@ -135,11 +162,14 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
     document.documentElement.classList.remove("sm-noscroll");
     document.removeEventListener("play", blockPlayback, true);
     currentOverlay = null;
+    previousFocus?.focus?.({ preventScroll: true });
   }
 
   setButtons(buttons);
   document.body.append(root);
   document.documentElement.classList.add("sm-noscroll");
+  // The card rather than a button, so Enter or Space can't dismiss it by accident.
+  card.focus({ preventScroll: true });
 
   if (pauseVideos) {
     document.querySelectorAll("video").forEach((v) => v.pause());
