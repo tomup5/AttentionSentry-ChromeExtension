@@ -1,12 +1,102 @@
 # Attention Sentry: Study Without Distraction
 
+[![CI](https://github.com/tomup5/AttentionSentry-ChromeExtension/actions/workflows/ci.yml/badge.svg)](https://github.com/tomup5/AttentionSentry-ChromeExtension/actions/workflows/ci.yml)
+![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-blue)
+![No runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)
+[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
 A Chrome extension for studying on YouTube, Reddit, Wikipedia, Discord, and The New York Times. When one of these sites uses a design pattern meant to hold your attention, like infinite scroll, autoplay, view counts, or daily games, the extension steps in and tells you which pattern it is.
 
 The idea is that once you know what these patterns look like, you start noticing them yourself. The explanations are based on HCI research on dark patterns and attention capture (listed under Background).
 
-<!-- Add a screenshot or GIF here, e.g. ![Attention Sentry overlay on YouTube](docs/screenshot.png) -->
+| Catches a link-hopping trail on Wikipedia | Asks why you came, before the feed loads |
+| :---: | :---: |
+| ![Check-in overlay on Wikipedia showing a trail of links followed](docs/screenshots/wikipedia-checkin.png) | ![Intention check overlay on YouTube](docs/screenshots/youtube-intention.png) |
 
-## Features
+<p align="center">
+  <img src="docs/screenshots/popup.png" alt="The Attention Sentry popup with per-site controls" width="320" />
+</p>
+
+## How it works
+
+Each site has its own switch and collapsible section in the popup. Features that hide something do so at every strictness level; check-ins follow the strictness level:
+
+| Mode | Behavior |
+|---|---|
+| **Hint** | Dismissible toasts that explain the pattern. Nothing is removed. |
+| **Pause** | Modal overlays that pause playback, with short countdowns before you can continue. |
+| **Block** | Removes the pattern: hides the sidebar, end screens, and Shorts shelves, and stops the feed from loading more. |
+
+The main switch in the popup can always turn Attention Sentry off, even in Block mode.
+
+**Distracting-site blocker.** While Attention Sentry is on, the sites you pick (TikTok, Instagram, Snapchat, X, Facebook, Tumblr, Twitch, Netflix, Pinterest, plus any you add) open an Attention Sentry page instead. The strictness level decides how hard they are to get past: Hint offers an "Open anyway" button, Pause makes you wait 15 seconds first, and Block keeps them closed until Attention Sentry is off. An unlocked site stays open for 5 minutes.
+
+The settings page (gear icon in the popup) changes the font and background color used by the popup and every on-page prompt. It offers nine fonts, six color themes plus an automatic light or dark theme (which follows each site's own dark mode), eight accent colors, and three text sizes.
+
+While you study, the popup shows a summary of the current tab's session on a supported site: your stated goal, how many videos or articles you've opened, and how long the tab has been on screen.
+
+See [features by site](#features-by-site) for the full list.
+
+## Installation
+
+1. Clone this repository.
+2. Open `chrome://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select the project folder.
+4. Open the extension popup, turn on Attention Sentry, and visit one of the supported sites.
+
+## Engineering decisions
+
+- **Blocking without reading the page.** Distracting sites are blocked with `declarativeNetRequest` rules, so Chrome stops the load and the extension never sees those pages. Host access is optional and requested per site; without it a site is still blocked, just with Chrome's own error page.
+- **Selectors that survive redesigns.** YouTube's view counts are matched by text ("1.2M views") because its class names and card components keep changing. Reddit's counts render inside shadow DOM, so a style is injected into each shadow root. Discord's generated class names are avoided in favor of data attributes and URLs.
+- **No flash of hidden content.** YouTube's mutation handling is deliberately unthrottled: observer callbacks run before paint, so a count is tagged and hidden before it can appear. Sites without that requirement use a throttled observer.
+- **Single-page apps as a first-class case.** One lifecycle in `startSite()` separates a real page change from a settings change, so changing an accent color can't undo a feed that Block mode stopped.
+- **Page-proof state.** Per-tab session data lives in `chrome.storage.session`, out of reach of the sites' own scripts, instead of the page's `sessionStorage`. User text only ever reaches the DOM through `textContent`.
+- **No build step, and nothing to download.** The extension ships as the source you can read here, with fonts bundled instead of fetched from a CDN, so it makes no network requests. npm is used only for development tooling, and none of it ships.
+
+## Architecture
+
+```
+ Popup ──writes──► chrome.storage.sync ──onChanged──► Content scripts (one per site)
+                          │                                   │
+                       onChanged                    closeTab / getTabId
+                          ▼                                   │
+                 Background worker ◄──────────────────────────┘
+                          │
+             declarativeNetRequest rules
+                          ▼
+            Blocked page (or Chrome's error page)
+```
+
+- **`popup/`**: settings UI, split into one script per part of the page. `popup.js` holds the settings and loads last. It writes to `chrome.storage.sync` and never messages the page directly. Sections are built from `SITE_SECTIONS` in `site-sections.js`.
+- **`content/`**: injected into each supported site. Settings apply live through storage change events.
+  - `site-runtime.js` holds `startSite()`, which runs each site's hooks at the right moments, plus shared page helpers and time tracking.
+  - `session.js` is per-tab session state, with one slot per site.
+  - `checkins.js` holds the prompts sites share: the intention check, goal badge, endless-scroll nudge, and count check-in.
+  - `ui.js` and `ui.css` are a small site-agnostic toolkit for toasts and accessible modal overlays.
+  - `techniques.js` holds the copy and citations for each design pattern.
+  - `youtube.js`, `reddit.js`, `wikipedia.js`, `discord.js`, and `nyt.js` contain each site's feature logic, with a matching `.css` file for the hiding. Rules are scoped to classes toggled on `<html>`, so they also apply to content the site renders later.
+- **`shared/`**: loaded by every context. `settings.js` is the schema and defaults, `common.js` the message types, storage keys, and DOM helper, `appearance.js` the fonts and themes, and `sites.js` the blockable sites and domain handling.
+- **`background.js`**: closes tabs on request, gives content scripts their tab ID, and turns the blocking settings into `declarativeNetRequest` rules. Temporary unlocks live in `chrome.storage.session` and end with a `chrome.alarms` alarm.
+- **`blocked/`**: the page shown in place of a blocked site. It reuses the overlay card from `content/ui.js`.
+
+These sites change their markup regularly. Selectors each script depends on are kept in `SELECTORS` at the top of the site's `.js` file, and selectors used only for hiding live in its `.css` file.
+
+## Development
+
+Requires Node 22 or later. Nothing here is needed to run the extension.
+
+```sh
+npm install
+npm test        # unit and integration tests
+npm run lint    # ESLint, including cross-file globals
+npm run check   # lint, formatting, and tests, as run in CI
+```
+
+The tests load the real, unmodified scripts in manifest order into [jsdom](https://github.com/jsdom/jsdom), with only the `chrome.*` APIs faked. The popup and blocked page are loaded from their real HTML.
+
+To build the Chrome Web Store upload: `powershell -ExecutionPolicy Bypass -File scripts/package.ps1`.
+
+## Features by site
 
 **YouTube**
 
@@ -49,54 +139,6 @@ The idea is that once you know what these patterns look like, you start noticing
 | **Games check** | Daily games and streaks | Steps in before Wordle, Connections, Spelling Bee, the Mini, and other games |
 | **Article check-in** | Article chains | Checks in once you've read a set number of articles in one session |
 | **Hide "More to read"** | Recirculation | Hides Most Popular, Trending, Editors' Picks, and recommended-article boxes |
-
-Each site has its own switch and collapsible section in the popup. Features that hide something do so at every strictness level; check-ins follow the strictness level:
-
-| Mode | Behavior |
-|---|---|
-| **Hint** | Dismissible toasts that explain the pattern. Nothing is removed. |
-| **Pause** | Modal overlays that pause playback, with short countdowns before you can continue. |
-| **Block** | Removes the pattern: hides the sidebar, end screens, and Shorts shelves, and stops the feed from loading more. |
-
-The main switch in the popup can always turn Attention Sentry off, even in Block mode.
-
-**Distracting-site blocker.** While Attention Sentry is on, the sites you pick (TikTok, Instagram, Snapchat, X, Facebook, Tumblr, Twitch, Netflix, Pinterest, plus any you add) open an Attention Sentry page instead. The strictness level decides how hard they are to get past: Hint offers an "Open anyway" button, Pause makes you wait 15 seconds first, and Block keeps them closed until Attention Sentry is off. An unlocked site stays open for 5 minutes.
-
-The settings page (gear icon in the popup) changes the font and background color used by the popup and every on-page prompt. It offers nine fonts, six color themes plus an automatic light or dark theme (which follows each site's own dark mode), eight accent colors, and three text sizes.
-
-While you study, the popup shows a summary of the current tab's session on a supported site: your stated goal, how many videos or articles you've opened, and how long the tab has been on screen.
-
-## Installation
-
-1. Clone this repository.
-2. Open `chrome://extensions` and enable **Developer mode**.
-3. Click **Load unpacked** and select the project folder.
-4. Open the extension popup, turn on Attention Sentry, and visit one of the supported sites.
-
-## Architecture
-
-Manifest V3 with no build step and no dependencies.
-
-```
- Popup ──writes──► chrome.storage.sync ──onChanged──► Content scripts (one per site)
-                                                              │
- Background worker ◄──────────── "closeTab" message ──────────┘
-```
-
-- **`popup/`**: settings UI. Writes settings to `chrome.storage.sync`; it never messages the page directly. The per-site sections are built from `SITE_SECTIONS` in `popup.js`, and which ones are expanded is remembered in `chrome.storage.local`.
-- **`content/`**: injected into each supported site. Listens for storage changes so settings apply live without a reload.
-  - `ui.js` and `ui.css` are a small site-agnostic toolkit for toasts and modal overlays.
-  - `common.js` holds what every site shares: per-tab session state (one slot per site), the intention check and goal badge, the endless-scroll nudge, time tracking, and `startSite()`, which each site script calls once.
-  - `techniques.js` holds the copy and citations for each design pattern.
-  - `youtube.js`, `reddit.js`, `wikipedia.js`, `discord.js`, and `nyt.js` contain each site's feature logic, with a matching `.css` file for the hiding. Rules are scoped to classes toggled on `<html>`, so they also apply to content the site renders later. Single-page apps (YouTube, Reddit, Discord, NYT Games) are followed by polling the URL.
-  - YouTube card metadata ("1.2M views") and NYT "More to read" boxes are matched by text through a `MutationObserver`, because their class names change. Reddit's counts render partly inside shadow DOM, so `reddit.js` adds a style to each shadow root. Discord's class names are generated per build, so `discord.css` matches data attributes and class-name prefixes.
-- **`shared/settings.js`**: the settings schema and defaults, loaded by the popup, the content scripts, the background worker, and the blocked page.
-- **`shared/appearance.js`**: font and color themes for the popup and the on-page UI. Fonts are bundled in `fonts/` (SIL Open Font License, see `fonts/licenses/`) instead of loaded from a CDN, so the extension makes no network requests.
-- **`shared/sites.js`**: the list of blockable sites and helpers for matching and validating domains.
-- **`background.js`**: closes the tab on request and gives content scripts their tab ID, which keys per-tab session state. It also turns the site-blocking settings into `declarativeNetRequest` rules: sites the user granted access to are redirected to `blocked/`, the rest get Chrome's plain block page. Temporary unlocks live in `chrome.storage.session` and end with a `chrome.alarms` alarm.
-- **`blocked/`**: the page shown in place of a blocked site. It reuses the overlay card from `content/ui.js`.
-
-These sites change their markup regularly. Selectors each script depends on are kept in `SELECTORS` at the top of the site's `.js` file, and selectors used only for hiding live in its `.css` file.
 
 ## Privacy
 
