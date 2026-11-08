@@ -20,9 +20,6 @@ function removeBadge() {
   document.getElementById("sm-badge")?.remove();
 }
 
-// config: { siteName, reasons: [{ value, label, studying }], placeholder, onAccept? }
-// onAccept runs after the overlay closes, e.g. to resume the video
-
 function intentionText() {
   return formatIntention(session.get("intention", null));
 }
@@ -32,6 +29,8 @@ function goalReminder() {
   return text ? `You came here for: ${text}` : null;
 }
 
+// config: { siteName, reasons: [{ value, label, studying }], placeholder, onAccept? }
+// onAccept runs after the overlay closes, e.g. to resume the video
 function showIntentionScreen(config) {
   const mode = settings.mode;
 

@@ -5,6 +5,10 @@
   "description": "Points out the attention-grabbing tricks websites use while you study.",
   "minimum_chrome_version": "105",
 
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-ancestors 'none'"
+  },
+
   "permissions": ["storage", "declarativeNetRequest", "alarms"],
 
   "optional_host_permissions": ["*://*/*"],

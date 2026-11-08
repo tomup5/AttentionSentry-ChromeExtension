@@ -67,7 +67,7 @@ test("re-syncing replaces rules instead of adding duplicates", async () => {
 
 test("the blocked page can unlock a site", async () => {
   const { chrome } = await worker();
-  const sender = { tab: { id: 1 }, url: `${BLOCKED_PAGE}#https://x.com/` };
+  const sender = { tab: { id: 1 }, frameId: 0, url: `${BLOCKED_PAGE}#https://x.com/` };
   assert.equal(await send(chrome, { type: "unlockSite", siteId: "x" }, sender), true);
   await flush();
   assert.deepEqual(ruleFor(chrome, "block").condition.requestDomains, ["tiktok.com"]);
@@ -82,7 +82,7 @@ test("a content script on another site cannot unlock anything", async () => {
 
 test("Block mode refuses to unlock", async () => {
   const { chrome } = await worker({ settings: blockingSettings({ mode: "block" }) });
-  const sender = { tab: { id: 1 }, url: BLOCKED_PAGE };
+  const sender = { tab: { id: 1 }, frameId: 0, url: BLOCKED_PAGE };
   assert.equal(await send(chrome, { type: "unlockSite", siteId: "x" }, sender), false);
 });
 
@@ -97,4 +97,18 @@ test("closing a tab clears its session state", async () => {
   chrome.tabs.onRemoved.fire(9);
   await flush();
   assert.equal(chrome.storage.session.data["tab-9"], undefined);
+});
+
+test("the blocked page cannot unlock from inside another site's frame", async () => {
+  const { chrome } = await worker();
+  const sender = { tab: { id: 1 }, frameId: 4, url: BLOCKED_PAGE };
+  assert.equal(await send(chrome, { type: "unlockSite", siteId: "x" }, sender), undefined);
+  assert.equal(chrome.storage.session.data.unlocks, undefined);
+});
+
+test("unlocking a site that isn't on the block list is refused", async () => {
+  const { chrome } = await worker();
+  const sender = { tab: { id: 1 }, frameId: 0, url: BLOCKED_PAGE };
+  assert.equal(await send(chrome, { type: "unlockSite", siteId: "not-a-site" }, sender), false);
+  assert.equal(chrome.storage.session.data.unlocks, undefined);
 });
