@@ -1,5 +1,4 @@
-// Names and small helpers used across the extension's contexts. Message types and
-// storage keys are cross-context contracts, so each is defined once here.
+// Constants and helpers used everywhere.
 
 const MS_PER_MINUTE = 60000;
 
@@ -19,19 +18,17 @@ const STORAGE_KEYS = {
   DISCORD_BADGES_EXPLAINED: "discordBadgesExplained"
 };
 
-// The chrome.storage.session entry holding one tab's study session.
 function tabSessionKey(tabId) {
   return `tab-${tabId}`;
 }
 
-// A stated intention as display text, or null if none was given.
 function formatIntention(intent) {
   if (!intent || intent.reason === "skipped") return null;
   return intent.note ? `${intent.label}: "${intent.note}"` : intent.label;
 }
 
 // el("p", { class: "x", text: "hi", onclick: fn }, child1, child2)
-// Text is always set via textContent, so user input is never parsed as HTML.
+// text goes through textContent so user input never gets parsed as HTML
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {

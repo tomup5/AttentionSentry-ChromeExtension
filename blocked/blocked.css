@@ -1,4 +1,4 @@
-/* The page behind the blocked-site card. The card itself is .sm-card from content/ui.css. */
+/* Just the page behind the card, the card is .sm-card from ui.css */
 
 html,
 body {
@@ -9,7 +9,7 @@ body {
   background: color-mix(in srgb, var(--sm-text) 5%, var(--sm-bg));
 }
 
-/* No site to dim behind the card, so drop the modal backdrop. */
+/* Nothing behind it to dim */
 .sm-overlay {
   background: transparent;
   animation: none;

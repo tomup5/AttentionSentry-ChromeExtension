@@ -1,8 +1,7 @@
-// Per-tab state that survives reloads but ends with the tab: one study session.
-// Kept in chrome.storage.session rather than the page's sessionStorage, which
-// the site's own scripts could read. Reads are served from an in-memory copy.
-// Each site gets its own slot in the tab's entry, so a goal set on YouTube
-// doesn't follow you to Reddit. `lastSite` tells the popup which slot to show.
+// Per-tab state for one study session. Survives reloads, ends with the tab.
+// Using chrome.storage.session because the site's own scripts can read sessionStorage.
+// Each site gets its own slot so a goal set on YouTube doesn't follow you to Reddit.
+// lastSite tells the popup which slot to show.
 const session = {
   storageKey: null,
   all: {},
@@ -25,7 +24,7 @@ const session = {
     this.data[key] = value;
     this.save();
   },
-  // Adds `value` to the list at `key`. Returns the list's new length, or null if already there.
+  // Returns the new length, or null if value was already in the list
   addToSet(key, value) {
     const seen = this.get(key, []);
     if (seen.includes(value)) return null;
@@ -34,11 +33,11 @@ const session = {
     return seen.length;
   },
   save() {
-    // After the extension is reloaded or updated, scripts left in open tabs lose
-    // access to chrome.* and the call below would throw instead of rejecting.
+    // Extension got reloaded/updated and this tab is orphaned. chrome.* throws here
+    // instead of rejecting, so the catch below wouldn't help.
     if (!chrome.runtime?.id) return;
     chrome.storage.session.set({ [this.storageKey]: this.all }).catch(() => {
-      // Quota or context errors only cost persistence across reloads.
+      // Not worth surfacing, worst case the state doesn't survive a reload
     });
   }
 };

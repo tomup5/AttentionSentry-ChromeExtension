@@ -1,5 +1,4 @@
-// Shared by every site's content script: current settings, page helpers, time
-// tracking, and startSite(), which runs a site's hooks at the right moments.
+// Common content script plumbing. Each site calls startSite() once.
 
 const NAVIGATION_POLL_MS = 1000;
 const ACTIVE_TIME_SAVE_MS = 15000;
@@ -7,9 +6,8 @@ const WAIT_TIMEOUT_MS = 10000;
 const MUTATION_THROTTLE_MS = 250;
 
 let settings = null;
-let siteKey = null; // this site's key in settings, e.g. "reddit"
+let siteKey = null; // e.g. "reddit"
 
-// Attention Sentry is on and this site's switch in the popup is on.
 function siteActive() {
   return Boolean(settings?.studyMode && settings[siteKey].enabled);
 }
@@ -18,14 +16,11 @@ function siteSettings() {
   return settings[siteKey];
 }
 
-// --- Helpers ---
-
 function systemPrefersDark() {
   return matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-// Resolve with the first element matching `selector`, or null after `timeout` ms.
-// Sites render incrementally, so the element may not exist yet.
+// Resolves to null after the timeout. Sites render incrementally so it may not exist yet.
 function waitFor(selector, timeout = WAIT_TIMEOUT_MS) {
   return new Promise((resolve) => {
     const found = document.querySelector(selector);
@@ -47,20 +42,17 @@ function waitFor(selector, timeout = WAIT_TIMEOUT_MS) {
   });
 }
 
-// Content scripts can't close their own tab, so the background worker does it.
 function closeTab() {
   chrome.runtime.sendMessage({ type: MESSAGES.CLOSE_TAB });
 }
 
-// Go back to the previous page, or close the tab if there isn't one.
 function goBack() {
   closeOverlay();
   if (history.length > 1) history.back();
   else closeTab();
 }
 
-// Run `fn` at most once per `ms`, on the trailing edge. For MutationObserver
-// callbacks on sites that change the DOM constantly.
+// Trailing throttle for observers on sites that never stop changing the DOM
 function throttle(fn, ms) {
   let timer = null;
   return () => {
@@ -72,14 +64,8 @@ function throttle(fn, ms) {
   };
 }
 
-/**
- * Create a MutationObserver over the whole page that can be switched on and off.
- *   callback(records): runs on each batch of changes
- *   throttleMs: optional; run at most this often instead of on every batch
- *   observe: options for MutationObserver.observe()
- *   onStart(): optional; runs each time observing starts, e.g. to scan what's already there
- * Returns setEnabled(enabled), which is safe to call repeatedly.
- */
+// Whole-page MutationObserver with an on/off switch. Returns setEnabled(bool), which is
+// fine to call repeatedly. onStart runs every time observing starts.
 function createPageObserver(
   callback,
   { throttleMs, observe = { childList: true, subtree: true }, onStart } = {}
@@ -99,9 +85,7 @@ function createPageObserver(
   };
 }
 
-// --- Session time ---
-// Only time with the tab visible and the site active counts, so a tab left
-// open in the background doesn't inflate the popup's summary.
+// Only counts while the tab is visible, otherwise a background tab inflates the summary
 
 let visibleSince = null;
 
@@ -113,22 +97,14 @@ function recordActiveTime() {
   visibleSince = document.visibilityState === "visible" ? now : null;
 }
 
-// --- Startup ---
-
-/**
- * Load settings and session state, then keep the page in step with them.
- *   site: key in settings, e.g. "reddit"
- *   applyClasses(): required; syncs the CSS-driven features with the current settings
- *   onUrlChange(): resets per-page state. Runs only for a real page change, so
- *     state such as a stopped feed survives a settings change
- *   checkPage(): runs a page's prompts while the site is active, on every page
- *     change and settings change, so it must tolerate running twice on one page
- *   onActive(): redraws what depends on settings while the site is active
- *   onInactive(): cleans up anything beyond the shared UI when the site is off
- *   spa: true if the site changes pages without a full load, so the URL is polled
- *   navigationEvent: optional DOM event the site fires when it navigates
- *   isDark(): whether the host page is dark, for the "auto" background
- */
+// Site hooks:
+//   applyClasses - required, syncs the CSS-driven features with settings
+//   onUrlChange  - resets per-page state. Real page changes only, so a stopped feed
+//                  doesn't come back when a setting changes
+//   checkPage    - the page's prompts. Runs on page and settings changes, so it has
+//                  to be ok with running twice on one page
+//   onActive     - redraw whatever depends on settings
+//   onInactive   - extra cleanup when the site gets switched off
 async function startSite({
   site,
   applyClasses,
@@ -176,14 +152,13 @@ async function startSite({
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "sync" && changes.settings) {
-      recordActiveTime(); // bank time under the old on/off state first
+      recordActiveTime(); // count this under the old on/off state
       settings = mergeSettings(changes.settings.newValue);
       applySettings();
     }
   });
 
-  // Pages restored from the back/forward cache don't re-run content scripts,
-  // and their in-memory session copy may be stale.
+  // bfcache restores don't re-run content scripts and the in-memory session may be stale
   window.addEventListener("pageshow", async (event) => {
     if (!event.persisted) return;
     [settings] = await Promise.all([loadSettings(), session.load(site)]);

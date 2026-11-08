@@ -1,6 +1,5 @@
-// Popup entry point: holds the settings, renders them, and saves changes. The other
-// popup/ scripts each own one part of the page and are loaded before this one.
-// Content scripts pick up changes through chrome.storage.onChanged.
+// Popup entry point. Holds the settings and saves them. The other scripts in here
+// each handle one part of the page and have to load first.
 
 const MODES = {
   hint: {
@@ -44,7 +43,7 @@ function render() {
     else input.value = value;
   });
 
-  // "n of m on" counts each row's main switch, not sub-options or the header switch.
+  // counts each row's main switch, not sub-options or the header
   for (const { key } of SITE_SECTIONS) {
     const section = document.querySelector(`[data-section="${key}"]`);
     const features = [...section.querySelectorAll(".row > .switch input")];
@@ -61,8 +60,8 @@ function render() {
   renderAppearance();
 }
 
-// A failed save (usually a chrome.storage.sync quota) puts the popup back in step
-// with what's actually stored, so it never shows a change that didn't happen.
+// Saves can fail (usually the sync quota). Go back to what's stored so the popup
+// doesn't show a change that never happened.
 async function update() {
   const { settings: current, error } = await persistSettings(settings);
   settings = current;
@@ -70,7 +69,7 @@ async function update() {
   render();
 }
 
-// Number inputs carry their own min and max; anything unparseable falls back to the default.
+// Falls back to the default if it can't be parsed
 function clampNumber(input, site, key) {
   const n = parseInt(input.value, 10);
   if (isNaN(n)) return DEFAULT_SETTINGS[site][key];
@@ -82,8 +81,7 @@ function showView(view) {
   settingsView.hidden = view !== settingsView;
 }
 
-// --- Startup ---
-// The site sections are built first so the listeners below can find their inputs.
+// Sections have to exist before the listeners below can find their inputs
 
 buildSiteSections();
 

@@ -5,7 +5,7 @@ const REDIRECT_RULE_ID = 1;
 const BLOCK_RULE_ID = 2;
 const UNLOCK_ALARM_PREFIX = "unlock:";
 
-// Content scripts can read chrome.storage.session only once it's opened to them.
+// storage.session is extension-only by default, content scripts need this to read it
 const sessionAccess = chrome.storage.session.setAccessLevel({
   accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS"
 });
@@ -13,19 +13,17 @@ const sessionAccess = chrome.storage.session.setAccessLevel({
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!sender.tab) return;
 
-  // Content scripts can't close their own tab.
   if (message.type === MESSAGES.CLOSE_TAB) {
     chrome.tabs.remove(sender.tab.id);
   }
 
-  // Content scripts don't know their tab ID, which keys per-tab session state.
+  // Content scripts have no way to get their own tab id
   if (message.type === MESSAGES.GET_TAB_ID) {
     sessionAccess.then(() => sendResponse(sender.tab.id));
     return true; // keep the channel open for the async response
   }
 
-  // Sent by the blocked page's "Open anyway" / "Open for 5 minutes" button.
-  // Only that page may unlock, not the content scripts running inside other sites.
+  // Has to come from the blocked page itself, otherwise any content script could unlock sites
   if (message.type === MESSAGES.UNLOCK_SITE && sender.url?.startsWith(BLOCKED_PAGE)) {
     unlockSite(message.siteId).then(sendResponse);
     return true;
@@ -36,11 +34,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   chrome.storage.session.remove(tabSessionKey(tabId));
 });
 
-// --- Site blocking ---
-// Blocking uses declarativeNetRequest rules, so Chrome stops the page loading
-// and the extension never reads the blocked sites' content.
+// DNR rules mean Chrome does the blocking and we never touch the page
 
-// Unlocks are kept in session storage, so a browser restart re-blocks everything.
+// In session storage so restarting the browser re-blocks everything
 async function getUnlocks() {
   const stored = await chrome.storage.session.get(STORAGE_KEYS.UNLOCKS);
   return stored[STORAGE_KEYS.UNLOCKS] ?? {};
@@ -70,8 +66,8 @@ async function syncBlockRules() {
     : [];
   const domains = sites.flatMap((site) => site.domains);
 
-  // Redirecting to our page needs host access to the site. Domains the user
-  // didn't grant access to are still blocked, with Chrome's own error page.
+  // Redirecting needs host access. Without it the site still gets blocked, just with
+  // Chrome's error page.
   const access = await Promise.all(
     domains.map((domain) => chrome.permissions.contains({ origins: [originPattern(domain)] }))
   );
@@ -83,7 +79,7 @@ async function syncBlockRules() {
     addRules.push({
       id: REDIRECT_RULE_ID,
       priority: 1,
-      // \0 is the whole matched URL, passed to the blocked page so it can send the user on later.
+      // \0 is the full matched URL, the blocked page needs it to send you on later
       action: { type: "redirect", redirect: { regexSubstitution: `${BLOCKED_PAGE}#\\0` } },
       condition: {
         regexFilter: "^.+$",
@@ -107,7 +103,7 @@ async function syncBlockRules() {
     addRules
   });
 
-  // Rules only catch new page loads, so send tabs already open on a blocked site there too.
+  // Rules only apply to new loads, tabs already on the site need redirecting by hand
   if (redirectDomains.length) {
     const tabs = await chrome.tabs.query({ url: redirectDomains.map(originPattern) });
     for (const tab of tabs) {
@@ -116,7 +112,7 @@ async function syncBlockRules() {
   }
 }
 
-// Run syncs one at a time; overlapping ones would both try to add the same rule IDs.
+// One at a time, overlapping syncs would try to add the same rule IDs
 let syncing = Promise.resolve();
 function queueSync() {
   syncing = syncing.then(syncBlockRules).catch((error) => console.error(error));

@@ -1,5 +1,3 @@
-// The popup and the blocked page, loaded from their real HTML and script tags.
-
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { activeSettings, createChrome, flush, loadPage } = require("./helpers/harness");

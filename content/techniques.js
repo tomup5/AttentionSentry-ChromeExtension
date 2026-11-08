@@ -1,5 +1,4 @@
-// Explanations of each attention-capturing design pattern, shown in the
-// "Why?" line of every toast and overlay.
+// The "why" text for each pattern, shown in toasts and overlays.
 
 const TECHNIQUES = {
   intention: {
@@ -49,7 +48,7 @@ const TECHNIQUES = {
     source: "Mildner et al., CHI 2023"
   },
 
-  // --- Reddit ---
+  // Reddit
 
   votes: {
     name: "Vote and comment counts",
@@ -67,7 +66,7 @@ const TECHNIQUES = {
     source: "Mildner et al., CHI 2023"
   },
 
-  // --- Wikipedia ---
+  // Wikipedia
 
   linkHopping: {
     name: "Link hopping",
@@ -84,7 +83,7 @@ const TECHNIQUES = {
       "come back to it is usually enough to let it go for now."
   },
 
-  // --- Discord ---
+  // Discord
 
   offTopicChat: {
     name: "Always-on chat",
@@ -102,7 +101,7 @@ const TECHNIQUES = {
     source: "Monge Roffarello et al., CHI 2023"
   },
 
-  // --- New York Times ---
+  // New York Times
 
   dailyGames: {
     name: "Daily games and streaks",

@@ -1,11 +1,9 @@
-// The prompts sites share: the goal badge, the intention check, the endless-scroll
-// nudge, and the "you've opened N of these" check-in.
+// Prompts used by more than one site.
 
 const SHORT_COUNTDOWN_S = 5;
 const LONG_COUNTDOWN_S = 10;
 
-// --- Badge ---
-// One small fixed button per page: the stated goal, the starting article, or the study channel.
+// Only one badge per page (goal, starting article, or study channel)
 
 function showBadge({ label, text, title, onClick, right = false }) {
   removeBadge();
@@ -22,16 +20,13 @@ function removeBadge() {
   document.getElementById("sm-badge")?.remove();
 }
 
-// --- Intention check ---
-// `config` is { siteName, reasons, placeholder, onAccept }:
-//   reasons: [{ value, label, studying }]
-//   onAccept(): optional, runs after the overlay closes (e.g. resume the video)
+// config: { siteName, reasons: [{ value, label, studying }], placeholder, onAccept? }
+// onAccept runs after the overlay closes, e.g. to resume the video
 
 function intentionText() {
   return formatIntention(session.get("intention", null));
 }
 
-// "You came here for: ..." when a goal was given, otherwise null.
 function goalReminder() {
   const text = intentionText();
   return text ? `You came here for: ${text}` : null;
@@ -74,7 +69,7 @@ function showIntentionScreen(config) {
     config.onAccept?.();
   }
 
-  // Available buttons depend on the mode and the selected reason.
+  // Buttons depend on the mode and which reason is picked
   function updateButtons() {
     const reason = config.reasons.find((r) => r.value === select.value);
 
@@ -86,7 +81,7 @@ function showIntentionScreen(config) {
       return;
     }
 
-    // Pause and Block require a reason.
+    // Pause and Block need a reason
     if (!reason) {
       overlay.setButtons([{ label: "Pick a reason first", onClick: () => select.focus() }]);
       return;
@@ -100,7 +95,7 @@ function showIntentionScreen(config) {
         { label: "Continue anyway", countdown: LONG_COUNTDOWN_S, onClick: () => accept(reason) }
       ]);
     } else {
-      // Block: no way through except turning Attention Sentry off in the popup.
+      // Block: only way through is turning the extension off
       overlay.setButtons([{ label: "Back to studying", primary: true, onClick: goBack }]);
     }
   }
@@ -109,7 +104,7 @@ function showIntentionScreen(config) {
   updateButtons();
 }
 
-// Bottom-left reminder of the stated intention; click to change it.
+// Bottom-left reminder, click to change it
 function renderIntentionBadge(config) {
   removeBadge();
   const text = intentionText();
@@ -122,11 +117,8 @@ function renderIntentionBadge(config) {
   });
 }
 
-// --- Endless-scroll nudge ---
-// For sites with infinite feeds. Reads scrollNudge and scrollScreens from the site's settings.
-//   isFeed(): whether the current page is a feed
-//   stopFeed(): Block mode; stop the feed from loading more
-// Returns { reset }, to call on every navigation.
+// For infinite feeds. Uses scrollNudge/scrollScreens from the site's settings.
+// stopFeed only gets called in Block mode. Call reset() on every navigation.
 
 function createScrollNudge({ siteName, isFeed, stopFeed }) {
   let nudgesShown = 0;
@@ -135,7 +127,7 @@ function createScrollNudge({ siteName, isFeed, stopFeed }) {
     if (!siteActive() || !siteSettings().scrollNudge) return;
     if (!isFeed() || isOverlayOpen()) return;
 
-    // Worked out on each scroll so a new limit from the popup applies straight away.
+    // Recalculated every time so changing the limit in the popup works right away
     const screens = window.scrollY / window.innerHeight;
     if (screens < siteSettings().scrollScreens * (nudgesShown + 1)) return;
 
@@ -178,10 +170,7 @@ function createScrollNudge({ siteName, isFeed, stopFeed }) {
   };
 }
 
-// --- Count check-in ---
-// For sites where each new video or article is a step further from the goal.
-//   noun: "Video" or "Article"; count: how many this session
-//   onContinue(): optional, runs after the overlay closes
+// Used for the YouTube video count and the NYT article count
 
 function showCountCheckIn({ noun, count, technique, onContinue, pauseVideos = true }) {
   const body = goalReminder() ?? "Is this still part of what you're studying?";
@@ -211,9 +200,7 @@ function showCountCheckIn({ noun, count, technique, onContinue, pauseVideos = tr
   });
 }
 
-// --- One-time explanations ---
-
-// Shows `toast` the first time only, remembered under `storageKey` across sessions.
+// Only ever shows once, tracked in local storage
 async function explainOnce(storageKey, toast) {
   const { [storageKey]: explained } = await chrome.storage.local.get(storageKey);
   if (explained) return;

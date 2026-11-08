@@ -1,13 +1,7 @@
-/* Injected into YouTube.
- *
- * Feature rules, scoped to classes youtube.js toggles on <html>. These target
- * YouTube markup and are the first place to look when a feature breaks after
- * a YouTube redesign. The extension's own UI styles are in ui.css.
- *
- * !important is needed to beat YouTube's own specificity.
- */
+/* First place to check when something breaks after a YouTube redesign.
+   !important is needed to beat YouTube's own rules. */
 
-/* ==================== Hide metrics ==================== */
+/* Hide metrics */
 
 /* Any element whose text is a metric ("1.2M views") on cards, Shorts, the watch
    page, and channel headers. youtube.js tags these with [data-sm-metric] because
@@ -27,7 +21,7 @@ html.sm-hide-metrics view-count-factoid-renderer {
   display: none !important;
 }
 
-/* Elements with stable IDs or a fixed position in their component. */
+/* stable IDs or a fixed spot in their component */
 html.sm-hide-metrics ytd-watch-info-text #view-count,
 html.sm-hide-metrics #owner-sub-count,
 html.sm-hide-metrics like-button-view-model .ytSpecButtonShapeNextButtonTextContent,
@@ -37,13 +31,13 @@ html.sm-hide-metrics ytd-reel-video-renderer .ytSpecButtonShapeWithLabelLabel {
   visibility: hidden !important;
 }
 
-/* ==================== Blur thumbnails ==================== */
+/* Blur thumbnails */
 
 html.sm-blur-thumbs :is(ytd-thumbnail, yt-thumbnail-view-model) img {
   filter: blur(14px) grayscale(0.4);
   transition: filter 0.25s;
 }
-/* Reveal on hover. */
+/* reveal on hover */
 html.sm-blur-thumbs
   :is(
     ytd-rich-item-renderer,
@@ -56,10 +50,9 @@ html.sm-blur-thumbs :is(ytd-thumbnail, yt-thumbnail-view-model):hover img {
   filter: none;
 }
 
-/* ==================== Rabbit-hole guard (Block mode) ==================== */
+/* Rabbit-hole guard (Block mode) */
 
-/* "Up next" sidebar, end-screen grid and cards, the autoplay countdown,
-   and Shorts shelves on the home page and in search. */
+/* Up next sidebar, end screen, autoplay countdown, Shorts shelves */
 html.sm-rabbit-block #secondary,
 html.sm-rabbit-block .ytp-endscreen-content,
 html.sm-rabbit-block .ytp-ce-element,
@@ -69,9 +62,9 @@ html.sm-rabbit-block ytd-reel-shelf-renderer {
   display: none !important;
 }
 
-/* ==================== Endless scroll (Block mode) ==================== */
+/* Endless scroll (Block mode) */
 
-/* YouTube loads the next page of results when this element enters the viewport. */
+/* loads the next page of results when it scrolls into view */
 html.sm-feed-bottom ytd-continuation-item-renderer {
   display: none !important;
 }

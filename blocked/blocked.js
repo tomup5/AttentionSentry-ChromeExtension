@@ -1,7 +1,6 @@
-// Shown in place of a blocked site. The redirect rule in background.js passes
-// the original URL in the hash.
+// Shown instead of a blocked site. The original URL comes in through the hash.
 
-const UNLOCK_COUNTDOWN = 15; // seconds before the unlock button works, in Pause mode
+const UNLOCK_COUNTDOWN = 15; // seconds, Pause mode only
 
 const BODY = {
   hint: `You can still open it, and it'll stay open for ${UNLOCK_MINUTES} minutes.`,
@@ -14,8 +13,7 @@ const prefersDark = matchMedia("(prefers-color-scheme: dark)");
 
 let settings;
 
-// This page is web-accessible, so any site can open it with any hash.
-// Only ever send the user on to an ordinary web page.
+// Any site can open this page with whatever hash it wants, so only allow http(s)
 function parseBlockedUrl(raw) {
   try {
     const url = new URL(raw);
@@ -39,7 +37,7 @@ async function render() {
 
   const site = blockedUrl && siteForHost(chosenSites(settings), blockedUrl.hostname);
 
-  // Blocking was turned off or the site unlocked (maybe from another tab): carry on to it.
+  // Blocking got turned off or the site got unlocked (could be from another tab)
   if (blockedUrl && (!site || !isBlockingOn(settings) || (await isUnlocked(site)))) {
     location.replace(blockedUrl.href);
     return;

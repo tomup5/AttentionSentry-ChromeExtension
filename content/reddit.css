@@ -1,25 +1,17 @@
-/* Injected into Reddit.
- *
- * Feature rules, scoped to classes reddit.js toggles on <html>. These target
- * the current site's custom elements (shreddit-*, faceplate-*) and are the
- * first place to look when a feature breaks after a Reddit redesign. Counts
- * inside shadow DOM are hidden by reddit.js instead. The extension's own UI
- * styles are in ui.css.
- *
- * !important is needed to beat Reddit's own specificity.
- */
+/* Targets the current site's custom elements (shreddit-*, faceplate-*). First place to
+   check after a redesign. Counts inside shadow DOM are handled in reddit.js.
+   !important is needed to beat Reddit's own rules. */
 
-/* ==================== Hide metrics ==================== */
+/* Hide metrics */
 
-/* Votes, comment counts, community member counts, and karma. */
+/* Votes, comments, members, karma */
 html.sm-hide-metrics faceplate-number {
   visibility: hidden !important;
 }
 
-/* ==================== Hide sidebars ==================== */
+/* Hide sidebars */
 
-/* The right-hand column (recent posts, popular communities, related posts),
-   the "Recent" list, and the Popular, All, and Explore links in the left nav. */
+/* Right column, "Recent" list, and the Popular/All/Explore nav links */
 html.sm-hide-sidebars #right-sidebar-container,
 html.sm-hide-sidebars reddit-recent-pages,
 html.sm-hide-sidebars
@@ -31,10 +23,10 @@ html.sm-hide-sidebars
   display: none !important;
 }
 
-/* ==================== Endless scroll (Block mode) ==================== */
+/* Endless scroll (Block mode) */
 
-/* reddit.js marks the posts loaded so far with [data-sm-seen]; later ones are
-   hidden, along with the partial that loads the next batch. */
+/* reddit.js marks what's already loaded with [data-sm-seen]. Anything after that
+   gets hidden, including the partial that loads more. */
 html.sm-feed-bottom shreddit-feed :is(article, shreddit-post, shreddit-ad-post):not([data-sm-seen]),
 html.sm-feed-bottom shreddit-feed faceplate-partial {
   display: none !important;

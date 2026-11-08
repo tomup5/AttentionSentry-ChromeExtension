@@ -10,7 +10,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 
 > Points out the attention-grabbing tricks websites use while you study.
 
-**Category:** Productivity → Education (or Workflow & Planning)
+**Category:** Productivity → Education
 
 **Description:**
 
@@ -46,13 +46,15 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 > • Block: removes the sidebar, end screens, and Shorts, and stops the feed from loading more
 >
 > PRIVACY
-> No accounts, no analytics, no network requests. Everything stays in your browser.
+> No accounts, no analytics, and the extension makes no network requests. Your data stays in your browser, apart from Chrome's own settings sync if you use it.
+>
+> Not affiliated with or endorsed by YouTube, Reddit, Wikipedia, Discord, or The New York Times.
 
-**Assets you need to provide:**
+**Assets:**
 
-- Store icon: `icons/icon128.png`
-- At least one screenshot, 1280×800 or 640×400 (PNG or JPEG)
-- Small promo tile, 440×280
+- Store icon: `icons/icon128.png` (already in the zip)
+- Screenshots (1280×800): `docs/screenshots/wikipedia-checkin.png`, `docs/screenshots/youtube-intention.png`
+- Small promo tile (440×280): `store/promo-tile.png`
 
 ## Privacy practices tab
 
@@ -64,7 +66,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 
 | Permission | Justification |
 |---|---|
-| `storage` | Saves the user's settings, a flag for a one-time explanation message, and per-tab session state (the user's stated reason for visiting, which videos they've opened, and time spent, used for reminders and the session summary). Session state is cleared when the tab closes. |
+| `storage` | Saves the user's settings, flags for one-time explanation messages, Wikipedia links the user saves for later, Discord channels the user marks as study channels, and per-tab session state (the user's stated reason for visiting, the videos and articles they've opened, and time spent, used for reminders and the session summary). Session state is cleared when the tab closes. |
 | Host permissions `https://www.youtube.com/*`, `https://www.reddit.com/*`, `https://old.reddit.com/*`, `https://*.wikipedia.org/*`, `https://discord.com/*`, `https://www.nytimes.com/*` | Content scripts run only on these sites to hide engagement counts, recommendation modules, and unread badges, show reminder overlays, and (on YouTube) turn off autoplay. They do not run on any other site. |
 | `declarativeNetRequest` | Blocks main-frame loads of the sites the user chose to block, only while Attention Sentry and site blocking are on. Rules are built from the user's list; no browsing data is read or stored. |
 | `alarms` | Ends a temporary unlock: when a user opens a blocked site for 5 minutes, an alarm re-blocks it afterwards. |
@@ -72,10 +74,12 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 
 **Remote code:** No, I am not using remote code. All JavaScript is packaged with the extension.
 
-**Data usage:** The extension stores data locally to provide its features but does not collect or transmit it. If the dashboard asks per category:
+**Data usage:** The extension handles this data on the user's device to provide its features and never transmits it to the developer or any third party. Per category:
 
 - **Website content**: checked. The extension reads text on the supported sites (such as "1.2M views" on YouTube, module headings on nytimes.com, and the channel name in Discord's tab title) to decide what to hide or when to check in. Processed locally, never transmitted. Titles of Wikipedia links the user saves and names of Discord channels the user marks are stored locally only.
-- **Personally identifiable information, health, financial, authentication, personal communications, location, web history, user activity**: not collected.
+- **Web history**: checked. Per tab, the extension stores the IDs of YouTube videos opened, the addresses of New York Times articles opened, and the Wikipedia articles followed, for reminders and the session summary. This is held in memory and deleted when the tab closes. Wikipedia links the user saves are kept locally until the user removes them.
+- **User activity**: checked. The extension uses scroll depth and link clicks to trigger check-ins on the supported sites, and stores the user's stated reason for visiting and how long the tab has been on screen. Held in memory and deleted when the tab closes.
+- **Personally identifiable information, health, financial, authentication, personal communications, location**: not collected.
 
 Certify all three statements:
 

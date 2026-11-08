@@ -1,4 +1,4 @@
-// The settings view: font, background, accent, and text size.
+// Settings view: font, background, accent, text size
 
 const prefersDark = matchMedia("(prefers-color-scheme: dark)");
 const fontSelect = document.getElementById("font");
@@ -16,7 +16,7 @@ function renderAppearance() {
   markSelected(accentGroup, appearance.accent);
   markSelected(textSizeGroup, appearance.textSize);
 
-  // Accent swatches preview the shade that will actually be used on this background.
+  // Show the shade that'll actually get used on this background
   for (const swatch of accentGroup.children) {
     swatch.style.background = resolvePalette(
       { background: appearance.background, accent: swatch.dataset.value },
@@ -33,7 +33,6 @@ function markSelected(group, value) {
   }
 }
 
-// A radio-style button that sets settings.appearance[setting] = value when clicked.
 function radioOption(group, setting, value, label, className) {
   const option = document.createElement("button");
   option.className = className;

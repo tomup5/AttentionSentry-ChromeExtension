@@ -10,7 +10,7 @@ async function site(t, name, url, options) {
   return page;
 }
 
-// --- Manifest ---
+// Manifest
 
 for (const entry of manifest.content_scripts) {
   test(`every file listed for ${entry.matches[0]} exists`, () => {
@@ -37,7 +37,7 @@ for (const [name, url] of [
   });
 }
 
-// --- YouTube ---
+// YouTube
 
 for (const text of [
   "1.2M views",
@@ -90,7 +90,7 @@ test("YouTube keeps a stopped feed when a setting changes", async (t) => {
   assert.ok(page.document.documentElement.classList.contains("sm-feed-bottom"));
 });
 
-// --- Reddit ---
+// Reddit
 
 for (const [path_, type] of [
   ["/", "front"],
@@ -109,7 +109,7 @@ for (const [path_, type] of [
   });
 }
 
-// --- New York Times ---
+// New York Times
 
 for (const [path_, type] of [
   ["/", "home"],
@@ -135,7 +135,7 @@ test("NYT names the game from the path", async (t) => {
   assert.equal(page.window.gameName(), "Wordle");
 });
 
-// --- Discord ---
+// Discord
 
 test("Discord reads the server and channel from the URL", async (t) => {
   const page = await site(t, "discord", "https://discord.com/channels/123/456");
@@ -153,7 +153,7 @@ test("Discord reads channel and server names from the tab title", async (t) => {
   assert.deepEqual(plain(page.window.channelNames()), { name: "#homework", server: "Math 101" });
 });
 
-// --- Wikipedia ---
+// Wikipedia
 
 const WIKI = "https://en.wikipedia.org/wiki/Calculus";
 

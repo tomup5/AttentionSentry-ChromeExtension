@@ -1,5 +1,4 @@
-// Site-agnostic on-page UI: toasts and modal overlays.
-// All class names and IDs are prefixed "sm-" to avoid clashing with the host page.
+// Toasts and modal overlays. Everything's prefixed sm- to stay clear of the host page.
 
 const TOAST_DURATION_MS = 12000;
 const FOCUSABLE = "button:not(:disabled), select, input, a[href]";
@@ -14,8 +13,6 @@ function whyLine(technique) {
     technique.source && el("span", { class: "sm-source", text: technique.source })
   );
 }
-
-// --- Toasts ---
 
 function getToastStack() {
   let stack = document.getElementById("sm-toast-stack");
@@ -40,21 +37,17 @@ function showToast({ title, body, technique, duration = TOAST_DURATION_MS }) {
   return toast;
 }
 
-// --- Overlays ---
-
-let currentOverlay = null; // only one overlay at a time
+let currentOverlay = null; // only one at a time
 
 function isOverlayOpen() {
   return currentOverlay !== null;
 }
 
-// "play" doesn't bubble, but a capture-phase listener on document still
-// sees it for every <video>, so this re-pauses anything that starts.
+// play doesn't bubble, but capturing on document still sees it for every <video>
 function blockPlayback(event) {
   event.target.pause();
 }
 
-// Wraps a Tab keypress around the controls in `container`.
 function keepFocusInside(event, container) {
   const controls = [...container.querySelectorAll(FOCUSABLE)];
   const position = controls.indexOf(document.activeElement);
@@ -69,16 +62,8 @@ function keepFocusInside(event, container) {
   }
 }
 
-/**
- * Show a full-screen modal overlay.
- *   title, body, technique: text content
- *   content: optional element (e.g. a form) placed above the buttons
- *   buttons: [{ label, primary, countdown, onClick }]
- *      countdown: seconds the button stays disabled
- *      onClick(close): call close() to dismiss the overlay
- *   pauseVideos: keep every video paused while the overlay is open
- * Returns { root, close, setButtons }, or null if an overlay is already open.
- */
+// buttons: [{ label, primary, countdown (seconds disabled), onClick(close) }]
+// Returns { root, close, setButtons }, or null if one is already open.
 function showOverlay({ title, body, technique, content, buttons = [], pauseVideos = true }) {
   if (currentOverlay) return null;
 
@@ -101,8 +86,8 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
   );
   const root = el("div", { class: "sm-overlay" }, card);
 
-  // Keep the site's keyboard shortcuts (YouTube's k, f, j...) from firing behind the
-  // overlay, and keep Tab inside it, since everything behind it is unreachable.
+  // Stop the site's shortcuts (YouTube's k, f, j...) firing behind the overlay
+  // and keep Tab inside it
   root.addEventListener("keydown", (e) => {
     e.stopPropagation();
     if (e.key === "Tab") keepFocusInside(e, card);
@@ -152,7 +137,7 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
   setButtons(buttons);
   document.body.append(root);
   document.documentElement.classList.add("sm-noscroll");
-  // The card rather than a button, so Enter or Space can't dismiss it by accident.
+  // Focus the card and not a button so Enter/Space can't dismiss it by accident
   card.focus({ preventScroll: true });
 
   if (pauseVideos) {

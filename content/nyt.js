@@ -1,20 +1,16 @@
-// New York Times content script (www.nytimes.com, including Games).
-// Depends on globals from the scripts listed before it in manifest.json.
+// Content script for nytimes.com, including Games.
 
-// --- Selectors ---
-// Selectors used only for hiding live in nyt.css.
 const SELECTORS = {
   articleBody: 'section[name="articleBody"], #story',
   headings: "h2, h3, h4, [role='heading']"
 };
 
-// Headings of the modules that send you to another article. Matched by text,
-// like YouTube's metrics, because the Times' class names are generated.
+// Matched by heading text, same idea as YouTube's metrics. Class names here are generated.
 const RECIRC_HEADING =
   /^(most popular|trending|editors[’']? picks|more to read|read next|what to read next|related content|recommended for you|you may also like|more in [\w ]+)$/i;
 const RECIRC_MAX_LENGTH = 40;
 
-// Path keyword → display name. Games live under /games/, /crosswords/, and /puzzles/.
+// path keyword -> display name. Games are under /games/, /crosswords/ and /puzzles/
 const GAMES = {
   wordle: "Wordle",
   connections: "Connections",
@@ -28,8 +24,6 @@ const GAMES = {
   crossword: "the Crossword"
 };
 const GAME_COUNTDOWN = 15; // seconds, in Pause mode
-
-// --- Helpers ---
 
 function pageType() {
   const path = location.pathname;
@@ -45,9 +39,7 @@ function gameName() {
   return key ? GAMES[key] : "NYT Games";
 }
 
-// --- Feature: intention check ---
-// Only on the front page; links straight to an article (say, from a class
-// reading list) go through without asking.
+// Front page only. Links straight to an article (e.g. a class reading list) skip this.
 
 const INTENTION = {
   siteName: "The New York Times",
@@ -60,8 +52,7 @@ const INTENTION = {
   placeholder: 'What exactly? (optional, e.g. "op-ed for English 101")'
 };
 
-// --- Feature: games check ---
-// Asks once per game per tab session, before you start playing.
+// Once per game per tab
 
 function checkGame() {
   const game = gameName();
@@ -105,8 +96,6 @@ function checkGame() {
   });
 }
 
-// --- Feature: article count check-in ---
-
 function handleArticle() {
   const count = session.addToSet("articlesSeen", location.pathname);
   if (!settings.nyt.articleCheck || count === null || count < settings.nyt.articleLimit) return;
@@ -119,12 +108,10 @@ function handleArticle() {
   });
 }
 
-// --- Feature: hide "More to read" ---
-// Modules are found by their heading text and tagged [data-sm-recirc] for nyt.css.
-// The tag goes on the closest section or aside (or test-id wrapper), but never
-// on one that contains the article or is big enough to be a whole page column.
+// Tags the closest section/aside with [data-sm-recirc], unless it contains the article
+// or is basically a whole column.
 
-// A recommendation module has a handful of links; more means a larger wrapper.
+// Recommendation modules only have a few links, more than this is a bigger wrapper
 const RECIRC_MAX_LINKS = 25;
 
 function tagRecirc() {
@@ -146,8 +133,6 @@ function setRecircTagging(enabled) {
   setRecircObserving(enabled);
 }
 
-// --- Applying settings ---
-
 function applyPageClasses() {
   const on = siteActive();
   document.documentElement.classList.toggle("sm-hide-recirc", on && settings.nyt.hideRecirc);
@@ -167,10 +152,7 @@ function onActive() {
   renderIntentionBadge(INTENTION);
 }
 
-// --- Startup ---
-
-// Games and some sections switch pages without a full load.
-// The Times has no dark theme, so "auto" uses the light one.
+// No dark theme on the Times, so "auto" is always light
 startSite({
   site: "nyt",
   spa: true,
