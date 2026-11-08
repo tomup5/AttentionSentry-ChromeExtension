@@ -1,5 +1,5 @@
 // Discord content script (the web app at discord.com/channels/...).
-// Depends on globals from settings.js, techniques.js, ui.js, and common.js (see manifest load order).
+// Depends on globals from the scripts listed before it in manifest.json.
 //
 // Discord's class names are generated ("unread_a1b2c3") and change with its
 // builds, so matching relies on data attributes, URLs, and class-name prefixes.
@@ -13,13 +13,14 @@ const SELECTORS = {
 
 // Study channels are kept in chrome.storage.local, shared with the popup's Discord section.
 // Each entry is { guild, channel, name, server }.
-const STORAGE_KEY = "discordStudyChannels";
+const STORAGE_KEY = STORAGE_KEYS.STUDY_CHANNELS;
+
+// Discord updates the tab title, which names the channel, just after the URL.
+const TITLE_UPDATE_DELAY_MS = 500;
 
 // --- State ---
 
 let studyChannels = [];
-let lastHref = null;
-let channelObserver = null;
 
 // --- Helpers ---
 
@@ -34,7 +35,8 @@ function currentChannel() {
 function channelNames() {
   const parts = document.title.split(" | ").filter((part) => part !== "Discord");
   const name = parts.find((part) => part.startsWith("#")) ?? parts[0] ?? "this channel";
-  const server = parts[parts.indexOf(name) + 1] ?? (currentChannel()?.guild === "@me" ? "Direct messages" : "");
+  const server =
+    parts[parts.indexOf(name) + 1] ?? (currentChannel()?.guild === "@me" ? "Direct messages" : "");
   return { name, server };
 }
 
@@ -135,7 +137,7 @@ function checkChannel() {
   if (settings.mode === "pause") {
     buttons.push({
       label: "Stay for now",
-      countdown: 10,
+      countdown: LONG_COUNTDOWN_S,
       onClick: (close) => {
         allow();
         close();
@@ -161,24 +163,19 @@ function tagChannelRows() {
   }
 }
 
+const setChannelObserving = createPageObserver(tagChannelRows, {
+  throttleMs: MUTATION_THROTTLE_MS
+});
+
 function setChannelTagging(enabled) {
   tagChannelRows();
-  if (enabled && !channelObserver) {
-    channelObserver = new MutationObserver(throttle(tagChannelRows, 250));
-    channelObserver.observe(document.body, { childList: true, subtree: true });
-  } else if (!enabled && channelObserver) {
-    channelObserver.disconnect();
-    channelObserver = null;
-  }
+  setChannelObserving(enabled);
 }
 
 // --- Feature: hide unread badges ---
 
-async function explainBadgesOnce() {
-  const { discordBadgesExplained } = await chrome.storage.local.get("discordBadgesExplained");
-  if (discordBadgesExplained) return;
-  await chrome.storage.local.set({ discordBadgesExplained: true });
-  showToast({
+function explainBadgesOnce() {
+  explainOnce(STORAGE_KEYS.DISCORD_BADGES_EXPLAINED, {
     title: "Unread badges on other servers are hidden",
     body: "Messages are still there when you're done studying.",
     technique: TECHNIQUES.unreadBadges
@@ -202,31 +199,15 @@ function refresh() {
   renderChannelBadge();
 }
 
-function onNavigate() {
-  if (location.href === lastHref) return;
-  lastHref = location.href;
-  // Discord updates the tab title, which names the channel, just after the URL.
+function checkPage() {
   setTimeout(() => {
     refresh();
     if (siteActive() && settings.discord.studyChannels) checkChannel();
-  }, 500);
+  }, TITLE_UPDATE_DELAY_MS);
 }
 
-// Runs at startup and on every settings change.
-function applyAll() {
-  applyPageClasses();
-
-  if (!siteActive()) {
-    clearAllUI();
-    removeBadge();
-    return;
-  }
-
+function onActive() {
   if (settings.discord.hideBadges) explainBadgesOnce();
-
-  // Force the page logic to re-run in case Attention Sentry was just enabled.
-  lastHref = null;
-  onNavigate();
 }
 
 // --- Startup ---
@@ -242,17 +223,19 @@ function applyAll() {
     }
   });
 
-  // Discord is a single-page app, so startSite() polls the URL.
+  // Discord is a single-page app.
   // "auto" follows Discord's theme class (theme-dark, theme-darker, theme-midnight...).
   startSite({
     site: "discord",
-    apply: applyAll,
-    onNavigate,
+    spa: true,
+    applyClasses: applyPageClasses,
+    checkPage,
+    onActive,
     isDark: () => {
       const html = document.documentElement.classList;
       if (html.contains("theme-light")) return false;
       if ([...html].some((name) => name.startsWith("theme-"))) return true;
-      return matchMedia("(prefers-color-scheme: dark)").matches;
+      return systemPrefersDark();
     }
   });
 })();

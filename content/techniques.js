@@ -45,8 +45,7 @@ const TECHNIQUES = {
   recommendations: {
     name: "Recommendation rabbit hole",
     why:
-      "'Up next' is chosen to keep you watching. " +
-      "Every video ends with a link to another one.",
+      "'Up next' is chosen to keep you watching. " + "Every video ends with a link to another one.",
     source: "Mildner et al., CHI 2023"
   },
 

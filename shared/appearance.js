@@ -157,21 +157,30 @@ function resolvePalette({ background, accent }, prefersDark) {
   };
 }
 
-// Sets colors, font, and text scale as CSS custom properties on `el` (e.g. --sm-bg),
-// and loads the font. Returns the resolved palette.
-function applyAppearance(el, appearance, prefersDark, prefix) {
+// Sets colors, font, and text scale as CSS custom properties (e.g. --sm-bg), and
+// loads the font. Returns the resolved palette. The properties go in a stylesheet
+// because some hosts, Discord among them, overwrite the style attribute on <html>.
+function applyAppearance(doc, appearance, prefersDark, prefix) {
   const palette = resolvePalette(appearance, prefersDark);
   const font = FONTS[appearance.font] ?? FONTS.system;
-  const scale = TEXT_SIZES[appearance.textSize]?.scale ?? 1;
+  const variables = {
+    bg: palette.bg,
+    text: palette.text,
+    muted: palette.muted,
+    border: palette.border,
+    accent: palette.accent,
+    onAccent: palette.onAccent,
+    tint: palette.tint ?? "transparent",
+    font: font.stack,
+    transform: font.uppercase ? "uppercase" : "none",
+    scale: TEXT_SIZES[appearance.textSize]?.scale ?? 1
+  };
+  const declarations = Object.entries(variables)
+    .map(([name, value]) => `--${prefix}${name}: ${value};`)
+    .join(" ");
 
-  for (const key of ["bg", "text", "muted", "border", "accent", "onAccent"]) {
-    el.style.setProperty(`--${prefix}${key}`, palette[key]);
-  }
-  el.style.setProperty(`--${prefix}tint`, palette.tint ?? "transparent");
-  el.style.setProperty(`--${prefix}font`, font.stack);
-  el.style.setProperty(`--${prefix}transform`, font.uppercase ? "uppercase" : "none");
-  el.style.setProperty(`--${prefix}scale`, scale);
-  applyFontFaces(el.ownerDocument, font);
+  setStyleSheet(doc, "sm-theme", `:root { ${declarations} }`);
+  setStyleSheet(doc, "sm-font-faces", fontFaceCss(font));
   return palette;
 }
 
@@ -191,12 +200,12 @@ function fontFaceCss(font) {
     .join("\n");
 }
 
-function applyFontFaces(doc, font) {
-  let style = doc.getElementById("sm-font-faces");
+function setStyleSheet(doc, id, css) {
+  let style = doc.getElementById(id);
   if (!style) {
     style = doc.createElement("style");
-    style.id = "sm-font-faces";
+    style.id = id;
     doc.head.append(style);
   }
-  style.textContent = fontFaceCss(font);
+  style.textContent = css;
 }

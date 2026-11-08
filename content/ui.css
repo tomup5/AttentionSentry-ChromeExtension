@@ -87,8 +87,15 @@ html.sm-noscroll {
   border: 1px solid var(--sm-border);
   border-radius: 7px;
   background: var(--sm-bg);
-  box-shadow: 0 2px 0 rgba(24, 20, 16, 0.08), 0 10px 20px -10px rgba(24, 20, 16, 0.45);
+  box-shadow:
+    0 2px 0 rgba(24, 20, 16, 0.08),
+    0 10px 20px -10px rgba(24, 20, 16, 0.45);
 }
+/* The card takes focus so screen readers announce it; it isn't a control. */
+.sm-card:focus {
+  outline: none;
+}
+
 .sm-card h2 {
   font-size: calc(20px * var(--sm-scale));
   font-weight: 600;
@@ -107,12 +114,14 @@ html.sm-noscroll {
 }
 .sm-select,
 .sm-input {
+  box-sizing: border-box;
   width: 100%;
   padding: 8px 10px;
   font: inherit;
   text-transform: inherit;
   color: var(--sm-text);
-  background: linear-gradient(var(--sm-tint, transparent), var(--sm-tint, transparent)), var(--sm-bg);
+  background:
+    linear-gradient(var(--sm-tint, transparent), var(--sm-tint, transparent)), var(--sm-bg);
   border: 1px solid var(--sm-border);
   border-radius: 4px;
 }

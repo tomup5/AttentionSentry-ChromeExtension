@@ -1,5 +1,5 @@
 // New York Times content script (www.nytimes.com, including Games).
-// Depends on globals from settings.js, techniques.js, ui.js, and common.js (see manifest load order).
+// Depends on globals from the scripts listed before it in manifest.json.
 
 // --- Selectors ---
 // Selectors used only for hiding live in nyt.css.
@@ -28,10 +28,6 @@ const GAMES = {
   crossword: "the Crossword"
 };
 const GAME_COUNTDOWN = 15; // seconds, in Pause mode
-
-// --- State ---
-let lastHref = null;
-let recircObserver = null;
 
 // --- Helpers ---
 
@@ -77,7 +73,7 @@ function checkGame() {
     allow();
     showToast({
       title: `${game} while you study?`,
-      body: intentionText() ? `You came here for: ${intentionText()}` : null,
+      body: goalReminder(),
       technique: TECHNIQUES.dailyGames
     });
     return;
@@ -111,48 +107,16 @@ function checkGame() {
 
 // --- Feature: article count check-in ---
 
-// Returns the new number of distinct articles this session, or null for a reread.
-function recordArticle() {
-  const path = location.pathname;
-  const seen = session.get("articlesSeen", []);
-  if (seen.includes(path)) return null;
-  seen.push(path);
-  session.set("articlesSeen", seen);
-  return seen.length;
-}
-
 function handleArticle() {
-  const count = recordArticle();
+  const count = session.addToSet("articlesSeen", location.pathname);
   if (!settings.nyt.articleCheck || count === null || count < settings.nyt.articleLimit) return;
   if (isOverlayOpen()) return;
-
-  const reminder = intentionText()
-    ? `You came here for: ${intentionText()}`
-    : "Is this still part of what you're studying?";
-
-  if (settings.mode === "hint") {
-    showToast({
-      title: `Article #${count} this study session`,
-      body: reminder,
-      technique: TECHNIQUES.articleChain
-    });
-  } else {
-    showOverlay({
-      title: `Article #${count}: is this for your studying?`,
-      body: reminder,
-      technique: TECHNIQUES.articleChain,
-      buttons: [
-        { label: "Go back", onClick: goBack },
-        {
-          label: "Yes, it's for studying",
-          primary: true,
-          countdown: settings.mode === "pause" ? 5 : 0,
-          onClick: (close) => close()
-        }
-      ],
-      pauseVideos: false
-    });
-  }
+  showCountCheckIn({
+    noun: "Article",
+    count,
+    technique: TECHNIQUES.articleChain,
+    pauseVideos: false
+  });
 }
 
 // --- Feature: hide "More to read" ---
@@ -175,15 +139,11 @@ function tagRecirc() {
   }
 }
 
+const setRecircObserving = createPageObserver(tagRecirc, { throttleMs: MUTATION_THROTTLE_MS });
+
 function setRecircTagging(enabled) {
   if (enabled) tagRecirc();
-  if (enabled && !recircObserver) {
-    recircObserver = new MutationObserver(throttle(tagRecirc, 300));
-    recircObserver.observe(document.body, { childList: true, subtree: true });
-  } else if (!enabled && recircObserver) {
-    recircObserver.disconnect();
-    recircObserver = null;
-  }
+  setRecircObserving(enabled);
 }
 
 // --- Applying settings ---
@@ -194,12 +154,7 @@ function applyPageClasses() {
   setRecircTagging(on && settings.nyt.hideRecirc);
 }
 
-function onNavigate() {
-  if (location.href === lastHref) return;
-  lastHref = location.href;
-  applyPageClasses();
-  if (!siteActive()) return;
-
+function checkPage() {
   const type = pageType();
   if (type === "home" && settings.nyt.intention && !session.get("intentionAsked", false)) {
     showIntentionScreen(INTENTION);
@@ -208,25 +163,19 @@ function onNavigate() {
   if (type === "article") handleArticle();
 }
 
-// Runs at startup and on every settings change.
-function applyAll() {
-  applyPageClasses();
-
-  if (!siteActive()) {
-    clearAllUI();
-    removeBadge();
-    return;
-  }
-
+function onActive() {
   renderIntentionBadge(INTENTION);
-
-  // Force the page logic to re-run in case Attention Sentry was just enabled.
-  lastHref = null;
-  onNavigate();
 }
 
 // --- Startup ---
 
-// Games and some sections switch pages without a full load, so startSite() polls the URL.
+// Games and some sections switch pages without a full load.
 // The Times has no dark theme, so "auto" uses the light one.
-startSite({ site: "nyt", apply: applyAll, onNavigate, isDark: () => false });
+startSite({
+  site: "nyt",
+  spa: true,
+  applyClasses: applyPageClasses,
+  checkPage,
+  onActive,
+  isDark: () => false
+});

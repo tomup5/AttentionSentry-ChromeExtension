@@ -1,5 +1,5 @@
 // Wikipedia content script (every language, desktop and mobile).
-// Depends on globals from settings.js, techniques.js, ui.js, and common.js (see manifest load order).
+// Depends on globals from the scripts listed before it in manifest.json.
 
 // --- Selectors ---
 // Selectors used only for hiding live in wikipedia.css.
@@ -10,7 +10,8 @@ const SELECTORS = {
   // URL and drops namespaced pages (File:, Help:, Special:...).
   articleLinks: "#mw-content-text a[href]:not(.new, .external, .mw-file-description)",
   // Desktop (Vector) and mobile (Minerva) search boxes, including typeahead suggestions.
-  search: "#searchform, #vector-sticky-search-form, .vector-search-box, .cdx-typeahead-search, .minerva-search-form"
+  search:
+    "#searchform, #vector-sticky-search-form, .vector-search-box, .cdx-typeahead-search, .minerva-search-form"
 };
 
 // The trail keeps its first page and the most recent ones.
@@ -48,7 +49,9 @@ function articleTitle() {
 
 function isArticleLink(link) {
   const path = safeDecode(link.pathname);
-  return link.origin === location.origin && path.startsWith("/wiki/") && !path.slice(6).includes(":");
+  return (
+    link.origin === location.origin && path.startsWith("/wiki/") && !path.slice(6).includes(":")
+  );
 }
 
 // --- Feature: rabbit-hole tracker ---
@@ -61,42 +64,60 @@ function recentNavigation(key) {
   return entry && Date.now() - entry.at < NAVIGATION_WINDOW_MS ? entry : null;
 }
 
+// The trail after arriving at `here`, and whether that was a step further along it.
+// Each page stores its hop number, because long trails drop their middle pages
+// and the trail's length then understates how far you've gone.
+function advanceTrail(trail, here, followedLink) {
+  const onTrail = trail.findIndex((page) => page.url === here.url);
+  if (onTrail !== -1) return { trail: trail.slice(0, onTrail + 1), moved: false }; // back, or reload
+  if (!followedLink) return { trail: [{ ...here, hop: 0 }], moved: false };
+
+  const next = [...trail, { ...here, hop: hopsAlong(trail) + 1 }];
+  if (next.length > TRAIL_MAX) next.splice(1, next.length - TRAIL_MAX);
+  return { trail: next, moved: true };
+}
+
+function hopsAlong(trail) {
+  return trail[trail.length - 1]?.hop ?? 0;
+}
+
+// Block checks in on every link past the limit; Hint and Pause every `limit` links.
+function isCheckInDue(hops, limit, mode) {
+  if (hops < limit) return false;
+  return mode === "block" || (hops - limit) % limit === 0;
+}
+
 function updateTrail() {
   const here = { title: articleTitle(), url: pageUrl() };
-  let trail = session.get("trail", []);
+  const trail = session.get("trail", []);
   const last = trail[trail.length - 1];
-  const onTrail = trail.findIndex((page) => page.url === here.url);
 
   // Wikipedia usually sends only its origin as the referrer, so a recorded
   // link click is the main signal; a full referrer is used when there is one.
   const clicked = recentNavigation("clickedLink");
-  const followedLink =
+  const followedLink = Boolean(
     last &&
     !recentNavigation("searched") &&
-    ((clicked && clicked.from === last.url) || pageUrl(document.referrer || "/") === last.url);
+    ((clicked && clicked.from === last.url) || pageUrl(document.referrer || "/") === last.url)
+  );
 
-  let moved = false;
-  if (onTrail !== -1) {
-    trail = trail.slice(0, onTrail + 1); // went back, or reloaded
-  } else if (followedLink) {
-    trail.push(here);
-    if (trail.length > TRAIL_MAX) trail.splice(1, trail.length - TRAIL_MAX);
-    moved = true;
-  } else {
-    trail = [here];
-  }
-
-  session.set("trail", trail);
+  const result = advanceTrail(trail, here, followedLink);
+  session.set("trail", result.trail);
   session.set("clickedLink", null);
   session.set("searched", null);
-  return { trail, moved };
+  return result;
 }
 
 function trailElement(trail) {
   const titles = trail.map((page) => page.title);
   const shown = titles.length > 6 ? [...titles.slice(0, 2), "…", ...titles.slice(-3)] : titles;
   const last = shown.pop();
-  return el("p", { class: "sm-trail" }, shown.map((t) => `${t} → `).join(""), el("strong", { text: last }));
+  return el(
+    "p",
+    { class: "sm-trail" },
+    shown.map((t) => `${t} → `).join(""),
+    el("strong", { text: last })
+  );
 }
 
 function goTo(url) {
@@ -106,13 +127,16 @@ function goTo(url) {
 
 function startNewTopic() {
   const trail = session.get("trail", []);
-  session.set("trail", trail.slice(-1));
+  session.set(
+    "trail",
+    trail.slice(-1).map((page) => ({ ...page, hop: 0 }))
+  );
   closeOverlay();
   renderTopicBadge();
 }
 
 function nudge(trail) {
-  const hops = trail.length - 1;
+  const hops = hopsAlong(trail);
   const start = trail[0];
   const here = trail[trail.length - 1];
   const reminder = intentionText() ?? `You started at "${start.title}".`;
@@ -136,11 +160,15 @@ function nudge(trail) {
       }
     });
   }
-  buttons.push({ label: `Back to "${start.title}"`, primary: true, onClick: () => goTo(start.url) });
+  buttons.push({
+    label: `Back to "${start.title}"`,
+    primary: true,
+    onClick: () => goTo(start.url)
+  });
   // Block mode, like YouTube's, lets you through only by saying this is what you're studying.
   buttons.push(
     settings.mode === "pause"
-      ? { label: "Keep reading", countdown: 5, onClick: (close) => close() }
+      ? { label: "Keep reading", countdown: SHORT_COUNTDOWN_S, onClick: (close) => close() }
       : { label: "This is my new topic", onClick: startNewTopic }
   );
 
@@ -159,11 +187,8 @@ function handleArticle() {
   const { trail, moved } = updateTrail();
   renderTopicBadge();
 
-  const hops = trail.length - 1;
-  const limit = settings.wikipedia.hopLimit;
-  if (!settings.wikipedia.rabbitHole || !moved || hops < limit || isOverlayOpen()) return;
-  // Block checks in on every link past the limit; Hint and Pause every `limit` links.
-  if (settings.mode === "block" || (hops - limit) % limit === 0) nudge(trail);
+  if (!settings.wikipedia.rabbitHole || !moved || isOverlayOpen()) return;
+  if (isCheckInDue(hopsAlong(trail), settings.wikipedia.hopLimit, settings.mode)) nudge(trail);
 }
 
 // Bottom-left link back to the first page of the trail, once you've left it.
@@ -214,6 +239,10 @@ function watchNavigation() {
 
 const SAVE_DELAY_MS = 300;
 const HIDE_DELAY_MS = 400;
+const SAVED_TOAST_MS = 4000;
+const SAVE_BUTTON_HEIGHT = 30;
+const SAVE_BUTTON_GAP = 4;
+const VIEWPORT_MARGIN = 8;
 
 let saveButton = null;
 let hoveredLink = null;
@@ -221,13 +250,15 @@ let showTimer = null;
 let hideTimer = null;
 
 async function saveTangent({ title, url }) {
-  const { savedTangents = [] } = await chrome.storage.local.get("savedTangents");
+  const { [STORAGE_KEYS.SAVED_TANGENTS]: savedTangents = [] } = await chrome.storage.local.get(
+    STORAGE_KEYS.SAVED_TANGENTS
+  );
   const from = session.get("trail", [])[0]?.title ?? articleTitle();
   const saved = [
     { title, url, from, savedAt: Date.now() },
     ...savedTangents.filter((item) => item.url !== url)
   ].slice(0, SAVED_MAX);
-  await chrome.storage.local.set({ savedTangents: saved });
+  await chrome.storage.local.set({ [STORAGE_KEYS.SAVED_TANGENTS]: saved });
 }
 
 async function onSaveClick() {
@@ -244,7 +275,7 @@ async function onSaveClick() {
     title: `Saved "${title}" for later`,
     body: "Find it in the Attention Sentry popup when you're done studying.",
     technique: first ? TECHNIQUES.saveForLater : null,
-    duration: first ? 12000 : 4000
+    duration: first ? TOAST_DURATION_MS : SAVED_TOAST_MS
   });
 }
 
@@ -257,9 +288,10 @@ function showSaveButton(link) {
   }
   const rect = link.getBoundingClientRect();
   // Above the link, where it won't cover Wikipedia's own preview popup below it.
-  const top = rect.top > 34 ? rect.top - 30 : rect.bottom + 4;
+  const fitsAbove = rect.top > SAVE_BUTTON_HEIGHT + SAVE_BUTTON_GAP;
+  const top = fitsAbove ? rect.top - SAVE_BUTTON_HEIGHT : rect.bottom + SAVE_BUTTON_GAP;
   saveButton.style.top = `${top}px`;
-  saveButton.style.left = `${Math.max(8, rect.left)}px`;
+  saveButton.style.left = `${Math.max(VIEWPORT_MARGIN, rect.left)}px`;
   document.body.append(saveButton);
 }
 
@@ -305,19 +337,12 @@ function applyPageClasses() {
 
 let articleHandled = false;
 
-// Runs at startup and on every settings change.
-function applyAll() {
-  applyPageClasses();
+function resetPage() {
+  articleHandled = false;
+}
 
-  if (!siteActive()) {
-    clearAllUI();
-    removeBadge();
-    hideSaveButton();
-    return;
-  }
-  if (!settings.wikipedia.saveTangents) hideSaveButton();
-
-  // The trail is updated once per page load; settings changes only redraw the badge.
+// The trail is updated once per page load; settings changes only redraw the badge.
+function checkPage() {
   if (articleHandled) {
     renderTopicBadge();
   } else {
@@ -326,25 +351,28 @@ function applyAll() {
   }
 }
 
-// --- Startup ---
+function onActive() {
+  if (!settings.wikipedia.saveTangents) hideSaveButton();
+}
 
-// Pages restored from the back/forward cache count as a new page load for the trail.
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) articleHandled = false;
-});
+// --- Startup ---
 
 watchNavigation();
 watchLinkHover();
 
-// Wikipedia does full page loads, so there's no navigation to poll for.
+// Wikipedia does full page loads, so there's no navigation to follow.
 // "auto" follows Wikipedia's own dark mode setting.
 startSite({
   site: "wikipedia",
-  apply: applyAll,
+  applyClasses: applyPageClasses,
+  onUrlChange: resetPage,
+  checkPage,
+  onActive,
+  onInactive: hideSaveButton,
   isDark: () => {
     const html = document.documentElement.classList;
     if (html.contains("skin-theme-clientpref-night")) return true;
     if (html.contains("skin-theme-clientpref-day")) return false;
-    return matchMedia("(prefers-color-scheme: dark)").matches;
+    return systemPrefersDark();
   }
 });

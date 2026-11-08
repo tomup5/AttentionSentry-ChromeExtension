@@ -34,26 +34,29 @@
       "matches": ["https://www.youtube.com/*"],
       "js": [
         "shared/settings.js",
+        "shared/common.js",
         "shared/appearance.js",
         "content/techniques.js",
         "content/ui.js",
-        "content/common.js",
+        "content/session.js",
+        "content/site-runtime.js",
+        "content/checkins.js",
         "content/youtube.js"
       ],
       "css": ["content/ui.css", "content/youtube.css"],
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "https://www.reddit.com/*",
-        "https://old.reddit.com/*"
-      ],
+      "matches": ["https://www.reddit.com/*", "https://old.reddit.com/*"],
       "js": [
         "shared/settings.js",
+        "shared/common.js",
         "shared/appearance.js",
         "content/techniques.js",
         "content/ui.js",
-        "content/common.js",
+        "content/session.js",
+        "content/site-runtime.js",
+        "content/checkins.js",
         "content/reddit.js"
       ],
       "css": ["content/ui.css", "content/reddit.css"],
@@ -63,10 +66,13 @@
       "matches": ["https://*.wikipedia.org/*"],
       "js": [
         "shared/settings.js",
+        "shared/common.js",
         "shared/appearance.js",
         "content/techniques.js",
         "content/ui.js",
-        "content/common.js",
+        "content/session.js",
+        "content/site-runtime.js",
+        "content/checkins.js",
         "content/wikipedia.js"
       ],
       "css": ["content/ui.css", "content/wikipedia.css"],
@@ -76,10 +82,13 @@
       "matches": ["https://discord.com/*"],
       "js": [
         "shared/settings.js",
+        "shared/common.js",
         "shared/appearance.js",
         "content/techniques.js",
         "content/ui.js",
-        "content/common.js",
+        "content/session.js",
+        "content/site-runtime.js",
+        "content/checkins.js",
         "content/discord.js"
       ],
       "css": ["content/ui.css", "content/discord.css"],
@@ -89,10 +98,13 @@
       "matches": ["https://www.nytimes.com/*"],
       "js": [
         "shared/settings.js",
+        "shared/common.js",
         "shared/appearance.js",
         "content/techniques.js",
         "content/ui.js",
-        "content/common.js",
+        "content/session.js",
+        "content/site-runtime.js",
+        "content/checkins.js",
         "content/nyt.js"
       ],
       "css": ["content/ui.css", "content/nyt.css"],

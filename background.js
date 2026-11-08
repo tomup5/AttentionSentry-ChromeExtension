@@ -1,4 +1,9 @@
-importScripts("shared/settings.js", "shared/sites.js");
+importScripts("shared/settings.js", "shared/common.js", "shared/sites.js");
+
+const BLOCKED_PAGE = chrome.runtime.getURL("blocked/blocked.html");
+const REDIRECT_RULE_ID = 1;
+const BLOCK_RULE_ID = 2;
+const UNLOCK_ALARM_PREFIX = "unlock:";
 
 // Content scripts can read chrome.storage.session only once it's opened to them.
 const sessionAccess = chrome.storage.session.setAccessLevel({
@@ -9,50 +14,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!sender.tab) return;
 
   // Content scripts can't close their own tab.
-  if (message.type === "closeTab") {
+  if (message.type === MESSAGES.CLOSE_TAB) {
     chrome.tabs.remove(sender.tab.id);
   }
 
   // Content scripts don't know their tab ID, which keys per-tab session state.
-  if (message.type === "getTabId") {
+  if (message.type === MESSAGES.GET_TAB_ID) {
     sessionAccess.then(() => sendResponse(sender.tab.id));
     return true; // keep the channel open for the async response
   }
 
   // Sent by the blocked page's "Open anyway" / "Open for 5 minutes" button.
   // Only that page may unlock, not the content scripts running inside other sites.
-  if (message.type === "unlockSite" && sender.url?.startsWith(BLOCKED_PAGE)) {
+  if (message.type === MESSAGES.UNLOCK_SITE && sender.url?.startsWith(BLOCKED_PAGE)) {
     unlockSite(message.siteId).then(sendResponse);
     return true;
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.storage.session.remove(`tab-${tabId}`);
+  chrome.storage.session.remove(tabSessionKey(tabId));
 });
 
 // --- Site blocking ---
 // Blocking uses declarativeNetRequest rules, so Chrome stops the page loading
 // and the extension never reads the blocked sites' content.
 
-const BLOCKED_PAGE = chrome.runtime.getURL("blocked/blocked.html");
-const REDIRECT_RULE_ID = 1;
-const BLOCK_RULE_ID = 2;
-
 // Unlocks are kept in session storage, so a browser restart re-blocks everything.
 async function getUnlocks() {
-  const { unlocks = {} } = await chrome.storage.session.get("unlocks");
-  return unlocks;
+  const stored = await chrome.storage.session.get(STORAGE_KEYS.UNLOCKS);
+  return stored[STORAGE_KEYS.UNLOCKS] ?? {};
+}
+
+function saveUnlocks(unlocks) {
+  return chrome.storage.session.set({ [STORAGE_KEYS.UNLOCKS]: unlocks });
 }
 
 async function unlockSite(siteId) {
   const settings = await loadSettings();
   if (settings.mode === "block") return false;
 
-  const when = Date.now() + UNLOCK_MINUTES * 60000;
-  const unlocks = await getUnlocks();
-  await chrome.storage.session.set({ unlocks: { ...unlocks, [siteId]: when } });
-  chrome.alarms.create(`unlock:${siteId}`, { when });
+  const when = Date.now() + UNLOCK_MINUTES * MS_PER_MINUTE;
+  await saveUnlocks({ ...(await getUnlocks()), [siteId]: when });
+  chrome.alarms.create(`${UNLOCK_ALARM_PREFIX}${siteId}`, { when });
   await queueSync();
   return true;
 }
@@ -120,10 +124,11 @@ function queueSync() {
 }
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (!alarm.name.startsWith("unlock:")) return;
-  const siteId = alarm.name.slice("unlock:".length);
-  const { [siteId]: _, ...rest } = await getUnlocks();
-  await chrome.storage.session.set({ unlocks: rest });
+  if (!alarm.name.startsWith(UNLOCK_ALARM_PREFIX)) return;
+  const siteId = alarm.name.slice(UNLOCK_ALARM_PREFIX.length);
+  const unlocks = await getUnlocks();
+  delete unlocks[siteId];
+  await saveUnlocks(unlocks);
   queueSync();
 });
 

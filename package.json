@@ -1,0 +1,24 @@
+{
+  "name": "attention-sentry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Development tooling for the Attention Sentry Chrome extension. Nothing here ships.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,json,css,html}\"",
+    "format:check": "prettier --check \"**/*.{js,json,css,html}\"",
+    "check": "npm run lint && npm run format:check && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "jsdom": "^31.0.0",
+    "prettier": "^3.9.10"
+  }
+}
