@@ -1,8 +1,8 @@
-# Builds the Chrome Web Store upload: only the files the extension loads at runtime.
-# Usage: powershell -ExecutionPolicy Bypass -File scripts/package.ps1
+# Builds the zip for the Chrome Web Store.
+# powershell -ExecutionPolicy Bypass -File scripts/package.ps1
 #
-# Entries are added manually because Compress-Archive in Windows PowerShell 5.1
-# writes backslash paths, which the Chrome Web Store rejects.
+# Adding entries by hand because Compress-Archive in PS 5.1 writes backslash paths
+# and the store rejects those.
 
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 

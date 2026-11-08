@@ -1,12 +1,11 @@
-// The "This session" card, summarizing the active tab.
+// "This session" card for the active tab
 
 const sessionSection = document.getElementById("session");
 const sessionTitle = sessionSection.querySelector(".section-title");
 const sessionGoal = document.getElementById("session-goal");
 const sessionStats = document.getElementById("session-stats");
 
-// Session data is written by the content scripts into chrome.storage.session,
-// keyed by tab, with one slot per site and `lastSite` naming the current one.
+// Written by the content scripts, see content/session.js for the shape
 async function renderSession() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const key = tab && tabSessionKey(tab.id);

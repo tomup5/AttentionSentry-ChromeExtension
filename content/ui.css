@@ -1,17 +1,12 @@
-/* Styles for the extension's own on-page UI (overlays, toasts, badge), shared by
- * every site and the blocked page. All class names and IDs are prefixed "sm-".
- *
- * !important is needed in places to beat host-page specificity.
- */
+/* On-page UI (overlays, toasts, badge). Also used by the blocked page.
+   Everything's prefixed sm- and some rules need !important to beat the host page. */
 
-/* Lock page scroll behind an open overlay. */
+/* no page scroll behind an overlay */
 html.sm-noscroll {
   overflow: hidden !important;
 }
 
-/* ==================== UI ==================== */
-
-/* Fallback theme; each content script sets these from the appearance settings. */
+/* Fallback, replaced with the user's theme once settings load */
 :root {
   --sm-bg: #fdfcfa;
   --sm-text: #231f1b;
@@ -24,7 +19,7 @@ html.sm-noscroll {
   --sm-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Sites set their own root font size (YouTube uses 10px), so sizes use px rather than rem. */
+/* px not rem, sites set their own root size (YouTube uses 10px) */
 .sm-overlay,
 .sm-toast,
 #sm-badge,
@@ -67,12 +62,12 @@ html.sm-noscroll {
   opacity: 0.8;
 }
 
-/* ----- Overlay ----- */
+/* Overlay */
 
 .sm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2147483647; /* max value; must sit above the player */
+  z-index: 2147483647; /* has to beat the video player */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,7 +86,7 @@ html.sm-noscroll {
     0 2px 0 rgba(24, 20, 16, 0.08),
     0 10px 20px -10px rgba(24, 20, 16, 0.45);
 }
-/* The card takes focus so screen readers announce it; it isn't a control. */
+/* focused for screen readers, doesn't need a ring */
 .sm-card:focus {
   outline: none;
 }
@@ -165,7 +160,7 @@ html.sm-noscroll {
   cursor: default;
 }
 
-/* ----- Toasts ----- */
+/* Toasts */
 
 #sm-toast-stack {
   position: fixed;
@@ -221,7 +216,7 @@ html.sm-noscroll {
   color: var(--sm-text);
 }
 
-/* ----- Intention badge (bottom-left) ----- */
+/* Intention badge (bottom-left) */
 
 #sm-badge {
   position: fixed;
@@ -247,7 +242,7 @@ html.sm-noscroll {
   color: var(--sm-muted);
 }
 
-/* ----- Sidebar label (Hint/Pause modes) ----- */
+/* Sidebar label (Hint/Pause modes) */
 
 #sm-sidebar-label {
   margin-bottom: 12px;
@@ -263,17 +258,16 @@ html.sm-noscroll {
   color: var(--sm-text);
 }
 
-/* ----- Badge variants ----- */
+/* Badge variants */
 
-/* Discord keeps its user panel in the bottom-left corner, so its badge sits
-   bottom-right, above the message box. */
+/* Discord's user panel is bottom-left, so the badge goes on the right */
 #sm-badge.sm-badge-right {
   left: auto;
   right: 20px;
   bottom: 96px;
 }
 
-/* ----- Wikipedia trail ----- */
+/* Wikipedia trail */
 
 .sm-trail {
   margin-top: 12px !important;
@@ -286,7 +280,7 @@ html.sm-noscroll {
   color: var(--sm-text);
 }
 
-/* ----- "Save for later" link button (Wikipedia) ----- */
+/* "Save for later" link button (Wikipedia) */
 
 #sm-save-link {
   position: fixed;

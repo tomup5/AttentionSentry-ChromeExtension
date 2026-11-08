@@ -24,7 +24,7 @@ function navigate(page, path) {
   page.document.dispatchEvent(new page.window.Event("test-navigate"));
 }
 
-// --- Site lifecycle ---
+// Site lifecycle
 
 test("startup treats the first page as a URL change and checks it", async (t) => {
   const { calls, hooks } = counters();
@@ -71,7 +71,7 @@ test("a page restored from the back/forward cache counts as a new page", async (
   assert.equal(calls.onUrlChange, 2);
 });
 
-// --- Session ---
+// Session
 
 test("session state is kept per site within a tab", async (t) => {
   const page = await start(t);
@@ -98,7 +98,7 @@ test("saving does nothing once the extension has been reloaded", async (t) => {
   assert.doesNotThrow(() => page.run(`session.set("goal", "x")`));
 });
 
-// --- Page observer ---
+// Page observer
 
 test("createPageObserver starts once and stops when disabled", async (t) => {
   const page = await start(t);
@@ -120,7 +120,7 @@ test("createPageObserver starts once and stops when disabled", async (t) => {
   assert.equal(page.window.observed.changes, 1);
 });
 
-// --- Endless-scroll nudge ---
+// Endless-scroll nudge
 
 async function feedPage(t, mode, scrollScreens = 10) {
   const settings = activeSettings({ mode, reddit: { scrollScreens } });
@@ -184,7 +184,7 @@ test("lowering the limit applies without a navigation", async (t) => {
   assert.equal(page.document.querySelectorAll(".sm-toast").length, 1);
 });
 
-// --- Check-ins ---
+// Check-ins
 
 test("a count check-in is a toast in Hint mode", async (t) => {
   const page = await start(t, { settings: activeSettings({ mode: "hint" }) });

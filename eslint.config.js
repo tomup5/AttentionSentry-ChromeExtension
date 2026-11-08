@@ -1,8 +1,8 @@
 const js = require("@eslint/js");
 const globals = require("globals");
 
-// The extension uses classic scripts that share globals, with no bundler. Listing
-// each context's globals here makes a mistyped or missing cross-file name a lint error.
+// No bundler, the scripts just share globals. Listing them here so a typo'd name
+// across files fails lint.
 const readonly = (names) => Object.fromEntries(names.map((name) => [name, "readonly"]));
 
 const SHARED = readonly([

@@ -1,13 +1,13 @@
-// The "Distracting sites" section: which sites are blocked and the access they need.
+// "Distracting sites" section
 
-// What a blocked site does in each strictness mode (see blocked/blocked.js).
+// matches what blocked/blocked.js does in each mode
 const SITE_MODE_NOTES = {
   hint: "Blocked sites show a reminder with an Open anyway button.",
   pause: `Blocked sites can open for ${UNLOCK_MINUTES} minutes after a short wait.`,
   block: "Blocked sites stay closed until you turn Attention Sentry off."
 };
 
-// Keeps the settings object well under chrome.storage.sync's per-item size limit.
+// Keeps settings under the sync storage per-item limit
 const MAX_CUSTOM_SITES = 50;
 
 const siteBlockInput = document.getElementById("siteBlock");
@@ -27,7 +27,7 @@ function renderSites() {
   sitesDesc.textContent = SITE_MODE_NOTES[settings.mode];
   sitesCount.textContent = siteBlock.enabled ? `${chosenSites(settings).length} blocked` : "Off";
 
-  // Built-in sites are created once; custom ones are rebuilt since they come and go.
+  // Built-ins only get created once, custom ones get rebuilt
   siteList.querySelectorAll(".custom").forEach((node) => node.remove());
   siteBlock.custom.forEach((domain) => siteList.append(siteOption(customSite(domain), true)));
   for (const input of siteList.querySelectorAll("input")) {
@@ -37,8 +37,7 @@ function renderSites() {
   renderSiteAccess();
 }
 
-// Shown when some chosen sites can only be blocked with Chrome's error page,
-// because the user didn't grant access to redirect them.
+// Sites we don't have access to get Chrome's error page instead of ours
 async function renderSiteAccess() {
   const origins = chosenSites(settings)
     .flatMap((site) => site.domains)
@@ -79,10 +78,8 @@ function removeButton(label, onclick) {
   });
 }
 
-// Ask for access to the sites so they can be redirected to the Attention Sentry page.
-// Must be called straight from a click handler: Chrome only shows the prompt
-// in response to a user gesture. The popup may close while the prompt is open,
-// so callers save their settings first.
+// Has to be called straight from a click handler, Chrome needs a user gesture for
+// the prompt. The popup can close while it's open, so save settings before calling.
 function requestSiteAccess(sites) {
   const origins = sites.flatMap((site) => site.domains).map(originPattern);
   if (!origins.length) return;

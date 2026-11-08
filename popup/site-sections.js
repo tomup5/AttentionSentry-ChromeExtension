@@ -1,8 +1,7 @@
-// The popup's collapsible sections: one per site, plus their saved order.
+// Per-site sections and their saved order
 
-// One collapsible section per site. Each feature is a row with a switch for
-// settings[site][key]; `sub` adds a checkbox or number below the description,
-// and `extra` names a list built by buildExtra().
+// Each feature is a row with a switch for settings[site][key]. sub adds a checkbox or
+// number under the description, extra names a list from buildExtra().
 const SITE_SECTIONS = [
   {
     key: "youtube",
@@ -161,11 +160,10 @@ const SITE_SECTIONS = [
 
 const blockerSection = document.querySelector('[data-section="siteBlock"]');
 
-// Keys of the expanded sections, remembered in chrome.storage.local.
+// remembered in local storage
 let openSections = [];
 
-// Filled in by buildSiteSections().
-// Each [data-setting] input maps to settings[site][key], written "site.key".
+// Filled by buildSiteSections(). data-setting is "site.key".
 let featureInputs = [];
 
 function switchControl(setting, label) {
@@ -239,7 +237,7 @@ function buildSiteSections() {
   }
   featureInputs = document.querySelectorAll("[data-setting]");
 
-  // Up and down arrows in every section header, just before its switch.
+  // Up/down arrows before each header's switch
   for (const section of document.querySelectorAll("[data-section]")) {
     const key = section.dataset.section;
     const name = section.querySelector(".site-name").textContent;
@@ -291,7 +289,7 @@ function moveIcon(d) {
   return svg;
 }
 
-// The saved order, minus keys that no longer exist, plus any new sections at the end.
+// Drops keys that no longer exist and appends any new sections
 function currentOrder() {
   const keys = [...SITE_SECTIONS.map((s) => s.key), "siteBlock"];
   const saved = Array.isArray(settings.sectionOrder) ? settings.sectionOrder : [];
@@ -311,7 +309,6 @@ function moveSection(key, dir) {
   update();
 }
 
-// Puts the sections in the saved order and disables the arrows at either end.
 function renderOrder() {
   const order = currentOrder();
   order.forEach((key, i) => {

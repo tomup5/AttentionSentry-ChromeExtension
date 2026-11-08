@@ -1,10 +1,4 @@
-/* Injected into Wikipedia.
- *
- * Feature rules, scoped to classes wikipedia.js toggles on <html>. The
- * extension's own UI styles are in ui.css.
- */
-
-/* ==================== Hide Main Page extras ==================== */
+/* Hide Main Page extras */
 
 /* English Wikipedia's Main Page: Today's featured article, Did you know,
    In the news, On this day, the featured list and picture, and their headings.
@@ -16,7 +10,7 @@ html.sm-hide-main-page
   display: none !important;
 }
 
-/* "Random article" in the main menu, on every page and in every language. */
+/* Random article link, every page and language */
 html.sm-hide-main-page #n-randompage,
 html.sm-hide-main-page li:has(> a[href*="Special:Random"]) {
   display: none !important;

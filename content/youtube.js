@@ -1,22 +1,16 @@
-// YouTube content script.
-// Depends on globals from the scripts listed before it in manifest.json.
+// Content script for YouTube.
 
-// --- Selectors ---
-// YouTube renames elements often; keep every selector the script relies on here.
-// Selectors used only for hiding live in youtube.css.
+// YouTube renames things constantly, so every selector the script uses is here
 const SELECTORS = {
   autoplayToggle: ".ytp-autonav-toggle-button",
   sidebar: "#secondary-inner, #secondary",
   mainVideo: "#movie_player video"
 };
 
-// --- State ---
-// Per-page state, reset on every navigation.
-let feedHasBottom = false; // Block mode: feed loading has been stopped
+// Reset on navigation
+let feedHasBottom = false; // Block mode stopped the feed
 let shortsSeenOnThisVisit = 0;
-let lastCountedShort = null; // so a settings change doesn't count the same Short twice
-
-// --- Helpers ---
+let lastCountedShort = null; // so a settings change doesn't double count
 
 function pageType() {
   const path = location.pathname;
@@ -37,8 +31,6 @@ function resumeMainVideo() {
     .catch(() => {});
 }
 
-// --- Feature: intention check ---
-
 const INTENTION = {
   siteName: "YouTube",
   reasons: [
@@ -53,21 +45,17 @@ const INTENTION = {
   }
 };
 
-// --- Feature: hide metrics ---
-// Hiding is done in youtube.css, gated by a class on <html>. Most metrics are
-// found by their text ("1.2M views") rather than by selector: YouTube has
-// several card components (videos, Shorts, sidebar) whose markup and class
-// names change often, but the text format is stable. A combined line such as
-// "1.2M views • 2 days ago" is hidden whole, since CSS can't hide part of a text node.
+// Most metrics get matched by their text ("1.2M views") instead of a selector. There
+// are several card components and their markup keeps changing, but the text doesn't.
+// "1.2M views • 2 days ago" gets hidden whole, CSS can't hide part of a text node.
 //
-// Matches are marked with a data attribute, not a class: YouTube's renderer
-// overwrites the whole class attribute when it re-renders a component.
+// Using a data attribute because YouTube overwrites class when it re-renders.
 
 const METRIC_PART =
   /^(no|[\d.,]+\s*([KMB]|thousand|million|billion)?)\s+(views?|subscribers?|watching|videos?)$/i;
-// Cheap pre-check on a single text node before reading its parent's full text.
+// Cheap check before reading the parent's full text
 const METRIC_WORD = /\b(views?|subscribers?|watching|videos?)\b/i;
-// Longer text is a container or a title, never a metadata line.
+// Anything longer is a container or a title
 const METRIC_MAX_LENGTH = 80;
 
 function isMetricText(text) {
@@ -75,8 +63,7 @@ function isMetricText(text) {
   return text.split(/\s*[•·]\s*/).some((part) => METRIC_PART.test(part));
 }
 
-// Compact cards show only "1M" next to a play icon; the unit is only in the
-// aria-label ("1 million views").
+// Compact cards show "1M" next to a play icon, the unit is only in the aria-label
 function evaluateMetric(element) {
   const isMetric =
     isMetricText(element.textContent.trim()) ||
@@ -84,9 +71,9 @@ function evaluateMetric(element) {
   element.toggleAttribute("data-sm-metric", isMetric);
 }
 
-// Checks a few ancestors, since a metric can be split across styled spans
-// ("<span>1.2M</span><span> views</span>"). Already-tagged ancestors are
-// re-checked because YouTube recycles cards with new text.
+// Walks up a few levels since a metric can be split across spans
+// ("<span>1.2M</span><span> views</span>"). Re-checks tagged ancestors because
+// YouTube recycles cards with new text.
 function tagMetricText(textNode) {
   const hasMetricWord =
     METRIC_WORD.test(textNode.data) ||
@@ -106,7 +93,7 @@ function tagMetricsIn(root) {
   while (walker.nextNode()) tagMetricText(walker.currentNode);
 }
 
-// Only the changed nodes are scanned. Observer callbacks run before paint, so counts never flash.
+// Observer callbacks run before paint, so counts never flash
 function onMetricMutations(records) {
   for (const record of records) {
     if (record.type === "characterData") {
@@ -118,7 +105,7 @@ function onMetricMutations(records) {
   }
 }
 
-// Unthrottled, so counts are tagged before the browser paints them.
+// Not throttled on purpose, counts have to be tagged before paint
 const setMetricTagging = createPageObserver(onMetricMutations, {
   observe: { childList: true, characterData: true, subtree: true },
   onStart: () => tagMetricsIn(document.body)
@@ -132,9 +119,7 @@ function explainMetricsOnce() {
   });
 }
 
-// --- Feature: endless-scroll nudge ---
-
-// Block mode hides the continuation element that triggers loading more (see youtube.css).
+// Block mode hides the continuation element that loads more (youtube.css)
 const scrollNudge = createScrollNudge({
   siteName: "YouTube",
   isFeed: () => pageType() === "feed",
@@ -144,7 +129,7 @@ const scrollNudge = createScrollNudge({
   }
 });
 
-// Shorts don't scroll the page; each swipe is a new URL, so count visits instead.
+// Shorts don't scroll the page, each swipe is a new URL, so count visits
 function onShortsVisit() {
   if (!settings.youtube.scrollNudge || location.href === lastCountedShort) return;
   lastCountedShort = location.href;
@@ -174,12 +159,10 @@ function onShortsVisit() {
   }
 }
 
-// --- Feature: rabbit-hole guard ---
-
 async function disableAutoplay() {
   const toggle = await waitFor(SELECTORS.autoplayToggle);
   if (!toggle) return;
-  // Clicking the real toggle (rather than hiding it) lets YouTube persist the preference.
+  // Click the real toggle so YouTube remembers the preference
   if (toggle.getAttribute("aria-checked") === "true") {
     toggle.click();
     if (!session.get("autoplayExplained", false)) {
@@ -189,7 +172,7 @@ async function disableAutoplay() {
   }
 }
 
-// Hint and Pause modes keep the sidebar but label it.
+// Hint and Pause keep the sidebar but label it
 async function labelSidebar() {
   const sidebar = await waitFor(SELECTORS.sidebar);
   if (!sidebar || document.getElementById("sm-sidebar-label")) return;
@@ -207,7 +190,7 @@ function handleWatchPage() {
   const id = currentVideoId();
   if (!id) return;
 
-  // Counted even with the guard off, for the popup's session summary.
+  // Counted even with the guard off, the popup shows it
   const count = session.addToSet("videosSeen", id);
   if (!settings.youtube.rabbitHole) return;
 
@@ -223,9 +206,6 @@ function handleWatchPage() {
   });
 }
 
-// --- Applying settings ---
-
-// Toggle the <html> classes that drive the CSS-only features.
 function applyPageClasses() {
   const on = siteActive();
   const yt = settings.youtube;
@@ -249,8 +229,8 @@ function resetPage() {
 }
 
 function checkPage() {
-  // Checked on every page, not just at startup: "Back to studying" may only go
-  // back to another YouTube page, which mustn't skip the question.
+  // Checked on every page: "Back to studying" might only land on another YouTube
+  // page and that shouldn't skip the question
   if (settings.youtube.intention && !session.get("intentionAsked", false)) {
     showIntentionScreen(INTENTION);
   }
@@ -263,11 +243,8 @@ function onActive() {
   renderIntentionBadge(INTENTION);
 }
 
-// --- Startup ---
-
-// YouTube is a single-page app, and Shorts swipes don't always fire its own
-// navigation event, so the URL is polled as well.
-// "auto" follows YouTube's own dark theme ([dark] on <html>).
+// Shorts swipes don't always fire yt-navigate-finish, so the URL gets polled too.
+// "auto" follows YouTube's dark theme ([dark] on <html>).
 startSite({
   site: "youtube",
   spa: true,

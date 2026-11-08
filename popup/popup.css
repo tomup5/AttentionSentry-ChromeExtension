@@ -1,4 +1,4 @@
-/* Defaults for first paint; popup.js replaces these with the chosen theme. */
+/* first paint defaults, replaced once the theme loads */
 :root {
   --bg: #fdfcfa;
   --text: #231f1b;
@@ -49,7 +49,7 @@ select {
   outline-offset: 2px;
 }
 
-/* --- Header --- */
+/* Header */
 
 .header {
   display: flex;
@@ -90,7 +90,7 @@ h1 {
   color: var(--text);
 }
 
-/* --- Sections --- */
+/* Sections */
 
 main {
   transition: opacity 0.1s;
@@ -128,7 +128,7 @@ main.disabled {
   color: var(--muted);
 }
 
-/* --- Strictness control --- */
+/* Strictness control */
 
 .segmented {
   display: flex;
@@ -159,7 +159,7 @@ main.disabled {
   font-weight: 600;
 }
 
-/* --- Feature rows --- */
+/* Feature rows */
 
 .row {
   display: flex;
@@ -206,7 +206,7 @@ main.disabled {
   color: var(--text);
 }
 
-/* --- Switch: a real checkbox under a drawn track --- */
+/* Switch: a real checkbox under a drawn track */
 
 .switch {
   position: relative;
@@ -250,7 +250,7 @@ main.disabled {
   outline-offset: 2px;
 }
 
-/* --- Settings --- */
+/* Settings */
 
 .field {
   display: flex;
@@ -354,7 +354,7 @@ select {
   background: var(--bg);
 }
 
-/* --- Session summary --- */
+/* Session summary */
 
 .session {
   border-bottom: 1px solid var(--border);
@@ -383,7 +383,7 @@ select {
   text-decoration: underline;
 }
 
-/* --- Collapsible site sections --- */
+/* Collapsible site sections */
 
 .site-head {
   display: flex;
@@ -451,7 +451,7 @@ select {
   pointer-events: none;
 }
 
-/* --- Saved lists (Wikipedia tangents, Discord study channels) --- */
+/* Saved lists (Wikipedia tangents, Discord study channels) */
 
 .saved {
   margin-top: 8px;
@@ -492,7 +492,7 @@ select {
   color: var(--muted);
 }
 
-/* --- Distracting sites --- */
+/* Distracting sites */
 
 #sites-desc {
   min-height: 0;

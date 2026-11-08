@@ -1,26 +1,20 @@
-// Wikipedia content script (every language, desktop and mobile).
-// Depends on globals from the scripts listed before it in manifest.json.
+// Content script for Wikipedia (all languages, desktop and mobile).
 
-// --- Selectors ---
-// Selectors used only for hiding live in wikipedia.css.
 const SELECTORS = {
   heading: "#firstHeading",
-  // Links in the article text. Their href may be absolute, root-relative, or
-  // "./Title" depending on the renderer, so isArticleLink() checks the resolved
-  // URL and drops namespaced pages (File:, Help:, Special:...).
+  // hrefs can be absolute, root-relative or "./Title" depending on the renderer, so
+  // isArticleLink() checks the resolved URL and filters out File:, Help:, etc.
   articleLinks: "#mw-content-text a[href]:not(.new, .external, .mw-file-description)",
-  // Desktop (Vector) and mobile (Minerva) search boxes, including typeahead suggestions.
+  // Vector (desktop) and Minerva (mobile) search, including typeahead
   search:
     "#searchform, #vector-sticky-search-form, .vector-search-box, .cdx-typeahead-search, .minerva-search-form"
 };
 
-// The trail keeps its first page and the most recent ones.
+// Trimmed from the middle, the first page always stays
 const TRAIL_MAX = 50;
 const SAVED_MAX = 100;
-// A clicked link or a search counts for the page load that follows it within this long.
+// How long a clicked link or search still counts for the next page load
 const NAVIGATION_WINDOW_MS = 60000;
-
-// --- Helpers ---
 
 function isArticle() {
   const body = document.body.classList;
@@ -32,7 +26,7 @@ function pageUrl(href = location.href) {
   return url.origin + url.pathname;
 }
 
-// decodeURIComponent throws on malformed escapes like "%E0%A4".
+// throws on malformed escapes like "%E0%A4"
 function safeDecode(text) {
   try {
     return decodeURIComponent(text);
@@ -54,19 +48,16 @@ function isArticleLink(link) {
   );
 }
 
-// --- Feature: rabbit-hole tracker ---
-// Each tab keeps a trail of the articles reached by following links from the
-// page you started on. Searching, typing a URL, or arriving from another site
-// starts a new trail. Going back to a page on the trail shortens it.
+// Trail of articles reached by following links from where you started. Searching,
+// typing a URL or coming from another site starts over. Going back shortens it.
 
 function recentNavigation(key) {
   const entry = session.get(key, null);
   return entry && Date.now() - entry.at < NAVIGATION_WINDOW_MS ? entry : null;
 }
 
-// The trail after arriving at `here`, and whether that was a step further along it.
-// Each page stores its hop number, because long trails drop their middle pages
-// and the trail's length then understates how far you've gone.
+// Each page stores its own hop number because long trails lose their middle pages,
+// so trail.length stops being the real distance.
 function advanceTrail(trail, here, followedLink) {
   const onTrail = trail.findIndex((page) => page.url === here.url);
   if (onTrail !== -1) return { trail: trail.slice(0, onTrail + 1), moved: false }; // back, or reload
@@ -81,7 +72,7 @@ function hopsAlong(trail) {
   return trail[trail.length - 1]?.hop ?? 0;
 }
 
-// Block checks in on every link past the limit; Hint and Pause every `limit` links.
+// Block: every link past the limit. Hint/Pause: every limit-th link.
 function isCheckInDue(hops, limit, mode) {
   if (hops < limit) return false;
   return mode === "block" || (hops - limit) % limit === 0;
@@ -92,8 +83,8 @@ function updateTrail() {
   const trail = session.get("trail", []);
   const last = trail[trail.length - 1];
 
-  // Wikipedia usually sends only its origin as the referrer, so a recorded
-  // link click is the main signal; a full referrer is used when there is one.
+  // Wikipedia usually only sends its origin as the referrer, so the recorded click is
+  // the main signal and a full referrer is the backup
   const clicked = recentNavigation("clickedLink");
   const followedLink = Boolean(
     last &&
@@ -165,7 +156,7 @@ function nudge(trail) {
     primary: true,
     onClick: () => goTo(start.url)
   });
-  // Block mode, like YouTube's, lets you through only by saying this is what you're studying.
+  // Block only lets you through if you say this is what you're studying
   buttons.push(
     settings.mode === "pause"
       ? { label: "Keep reading", countdown: SHORT_COUNTDOWN_S, onClick: (close) => close() }
@@ -191,7 +182,7 @@ function handleArticle() {
   if (isCheckInDue(hopsAlong(trail), settings.wikipedia.hopLimit, settings.mode)) nudge(trail);
 }
 
-// Bottom-left link back to the first page of the trail, once you've left it.
+// Bottom-left link back to the start of the trail
 function renderTopicBadge() {
   removeBadge();
   const trail = session.get("trail", []);
@@ -205,8 +196,8 @@ function renderTopicBadge() {
   });
 }
 
-// Remember which link was clicked and whether a search was made, for updateTrail()
-// on the next page. Capture phase, so Wikipedia's own handlers can't stop it.
+// updateTrail() reads these on the next page. Capture phase so Wikipedia's own
+// handlers can't stop it.
 function watchNavigation() {
   document.addEventListener(
     "click",
@@ -233,9 +224,7 @@ function watchNavigation() {
   );
 }
 
-// --- Feature: save tangents ---
-// Hovering an article link shows a "Save for later" button. Saved links are
-// kept in chrome.storage.local and listed in the popup's Wikipedia section.
+// Saved links go in local storage and show up in the popup's Wikipedia section
 
 const SAVE_DELAY_MS = 300;
 const HIDE_DELAY_MS = 400;
@@ -268,7 +257,7 @@ async function onSaveClick() {
   const title = link.title || link.textContent.trim();
   await saveTangent({ title, url: pageUrl(link.href) });
 
-  // The explanation shows once per tab; after that a short confirmation is enough.
+  // Full explanation once per tab, short confirmation after that
   const first = !session.get("tangentExplained", false);
   session.set("tangentExplained", true);
   showToast({
@@ -287,7 +276,7 @@ function showSaveButton(link) {
     saveButton.addEventListener("mouseleave", scheduleHide);
   }
   const rect = link.getBoundingClientRect();
-  // Above the link, where it won't cover Wikipedia's own preview popup below it.
+  // Above the link so it doesn't cover Wikipedia's preview popup
   const fitsAbove = rect.top > SAVE_BUTTON_HEIGHT + SAVE_BUTTON_GAP;
   const top = fitsAbove ? rect.top - SAVE_BUTTON_HEIGHT : rect.bottom + SAVE_BUTTON_GAP;
   saveButton.style.top = `${top}px`;
@@ -321,11 +310,9 @@ function watchLinkHover() {
   document.addEventListener("mouseout", (event) => {
     if (event.target.closest?.(SELECTORS.articleLinks)) scheduleHide();
   });
-  // The button is fixed-position, so it would drift away from its link.
+  // Button is fixed-position and would drift away from the link
   window.addEventListener("scroll", hideSaveButton, { passive: true });
 }
-
-// --- Applying settings ---
 
 function applyPageClasses() {
   const on = siteActive();
@@ -341,7 +328,7 @@ function resetPage() {
   articleHandled = false;
 }
 
-// The trail is updated once per page load; settings changes only redraw the badge.
+// Only update the trail once per page load, settings changes just redraw the badge
 function checkPage() {
   if (articleHandled) {
     renderTopicBadge();
@@ -355,13 +342,10 @@ function onActive() {
   if (!settings.wikipedia.saveTangents) hideSaveButton();
 }
 
-// --- Startup ---
-
 watchNavigation();
 watchLinkHover();
 
-// Wikipedia does full page loads, so there's no navigation to follow.
-// "auto" follows Wikipedia's own dark mode setting.
+// "auto" follows Wikipedia's own dark mode
 startSite({
   site: "wikipedia",
   applyClasses: applyPageClasses,

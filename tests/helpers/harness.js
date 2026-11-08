@@ -1,6 +1,5 @@
-// Loads the extension's real, unmodified scripts for testing. They are classic
-// scripts that share globals, so they run in a shared context in manifest order
-// rather than being imported. Only the chrome.* APIs are faked.
+// Runs the real scripts in manifest order, only chrome.* is faked. They're classic
+// scripts sharing globals so they can't just be imported.
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -101,8 +100,7 @@ function readSource(file) {
   return fs.readFileSync(path.join(ROOT, file), "utf8");
 }
 
-// Runs `files` in order in a fresh page. `run` evaluates in the page's scope,
-// which is the only way to reach top-level consts.
+// run() evaluates inside the page, only way to get at top-level consts
 function loadScripts(
   files,
   {
@@ -130,7 +128,6 @@ function loadScripts(
   };
 }
 
-// Loads an extension page from its real HTML, running its script tags in order.
 function loadPage(htmlFile, options = {}) {
   const html = readSource(htmlFile);
   const files = [...html.matchAll(/<script src="([^"]+)"/g)].map(([, src]) =>
@@ -139,19 +136,17 @@ function loadPage(htmlFile, options = {}) {
   return loadScripts(files, { ...options, html });
 }
 
-// Script list for a site's content script, taken from the manifest itself.
 function siteScripts(site) {
   const entry = manifest.content_scripts.find((c) => c.js.includes(`content/${site}.js`));
   if (!entry) throw new Error(`No content script for ${site}`);
   return entry.js;
 }
 
-// Lets chrome.* promises and any zero-delay timers settle.
+// Let chrome.* promises and zero-delay timers settle
 async function flush() {
   for (let i = 0; i < 3; i++) await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-// Settings with Attention Sentry switched on, plus per-section overrides.
 function activeSettings(overrides = {}) {
   return { studyMode: true, ...overrides };
 }
@@ -163,7 +158,6 @@ async function loadSite(site, { url, settings = activeSettings(), local, session
   return page;
 }
 
-// Loads everything a site script depends on, then starts a site with `hooks`.
 async function startCoreSite({
   site = "reddit",
   url,
@@ -181,7 +175,7 @@ async function startCoreSite({
   return page;
 }
 
-// Runs background.js the way Chrome does: a worker scope with importScripts.
+// Worker scope with importScripts, same as Chrome
 async function loadWorker({ chrome = createChrome() } = {}) {
   const context = vm.createContext({ chrome, console, URL, setTimeout });
   context.importScripts = (...files) => {
@@ -193,7 +187,7 @@ async function loadWorker({ chrome = createChrome() } = {}) {
   return { chrome, run: (code) => vm.runInContext(code, context) };
 }
 
-// Values from another realm fail strict deep equality on their prototypes.
+// Objects from another realm fail deepStrictEqual on their prototype
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 module.exports = {

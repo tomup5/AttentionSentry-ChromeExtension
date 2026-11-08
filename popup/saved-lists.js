@@ -1,5 +1,4 @@
-// Lists kept in chrome.storage.local by the content scripts:
-// Wikipedia tangents and Discord study channels.
+// Wikipedia tangents and Discord study channels, saved by the content scripts.
 
 const lists = {};
 

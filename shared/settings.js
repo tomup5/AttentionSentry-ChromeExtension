@@ -1,19 +1,18 @@
-// Settings schema and storage helpers, shared by the popup, the content scripts,
-// the background worker, and the blocked page.
+// Settings defaults and storage helpers.
 
 const DEFAULT_SETTINGS = {
   studyMode: false,
   mode: "hint", // "hint" | "pause" | "block"
-  // Order of the popup's site sections, top to bottom. Chosen with the arrows in each header.
+  // popup section order, set with the arrows in each header
   sectionOrder: ["youtube", "reddit", "wikipedia", "discord", "nyt", "siteBlock"],
-  // Each site has an `enabled` switch (the one in its popup header) plus its features.
+  // enabled is the switch in each site's popup header
   youtube: {
     enabled: true,
     intention: true,
     hideMetrics: true,
     blurThumbnails: false,
     scrollNudge: true,
-    scrollScreens: 10, // screen-heights scrolled (or Shorts watched) before a nudge
+    scrollScreens: 10, // screens scrolled (or Shorts watched) before a nudge
     rabbitHole: true
   },
   reddit: {
@@ -27,7 +26,7 @@ const DEFAULT_SETTINGS = {
   wikipedia: {
     enabled: true,
     rabbitHole: true,
-    hopLimit: 5, // links followed away from the starting article before a check-in
+    hopLimit: 5, // links away from the starting article before a check-in
     topicBadge: true,
     saveTangents: true,
     hideMainPage: true
@@ -42,18 +41,17 @@ const DEFAULT_SETTINGS = {
     intention: true,
     games: true,
     articleCheck: true,
-    articleLimit: 3, // articles in one session before a check-in
+    articleLimit: 3, // articles per session before a check-in
     hideRecirc: true
   },
   siteBlock: {
     enabled: false,
-    // Built-in site IDs (keys of BLOCKABLE_SITES) the user unchecked. Stored as
-    // exclusions so sites added in later versions start checked.
+    // Built-in site IDs the user unchecked. Stored this way so sites added later start checked.
     excluded: [],
     custom: [] // domains the user added, e.g. "reddit.com"
   },
   appearance: {
-    // Keys of the option maps in appearance.js.
+    // keys from appearance.js
     font: "russoOne",
     background: "burntOrange",
     accent: "theme",
@@ -61,8 +59,7 @@ const DEFAULT_SETTINGS = {
   }
 };
 
-// Layer saved settings over the defaults so keys added in later versions
-// still get a value for users with older saved settings.
+// Merge over the defaults so settings added in later versions still have a value
 function mergeSettings(saved) {
   saved = saved || {};
   const merged = { ...DEFAULT_SETTINGS, ...saved };
@@ -82,7 +79,7 @@ async function saveSettings(settings) {
   await chrome.storage.sync.set({ settings });
 }
 
-// Saves `draft`. Returns the settings now in effect, and the error if the save failed.
+// On failure, returns what's actually stored along with the error
 async function persistSettings(draft) {
   try {
     await saveSettings(draft);

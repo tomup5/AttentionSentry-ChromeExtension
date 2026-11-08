@@ -1,5 +1,5 @@
-// Font and color themes, shared by the popup and the on-page UI.
-// Fonts are bundled rather than loaded from a CDN so the extension makes no network requests.
+// Fonts and color themes for the popup and on-page UI.
+// Fonts are bundled so there are no network requests.
 
 const FONTS = {
   russoOne: {
@@ -64,7 +64,7 @@ const THEMES = {
     border: "#c25a1f",
     accent: "#3a1d0b",
     onAccent: "#ffffff",
-    // Translucent white laid over bars and controls so they lift off the orange.
+    // White tint so bars and controls stand out on the orange
     tint: "rgba(255, 255, 255, 0.18)"
   },
   light: {
@@ -119,8 +119,7 @@ const THEMES = {
 // "auto" follows the host's light or dark mode.
 const BACKGROUND_OPTIONS = ["auto", ...Object.keys(THEMES)];
 
-// "theme" keeps each background's own accent. Others have a lighter
-// variant for dark backgrounds so they keep enough contrast.
+// "theme" keeps the background's own accent. The rest have a lighter shade for dark backgrounds.
 const ACCENTS = {
   theme: { label: "Theme default" },
   blue: { label: "Blue", light: "#2c5f78", dark: "#8db4c9" },
@@ -132,7 +131,6 @@ const ACCENTS = {
   graphite: { label: "Graphite", light: "#3d3a36", dark: "#d2cec7" }
 };
 
-// Scales the text of the on-page prompts.
 const TEXT_SIZES = {
   small: { label: "Small", scale: 0.9 },
   default: { label: "Default", scale: 1 },
@@ -157,9 +155,8 @@ function resolvePalette({ background, accent }, prefersDark) {
   };
 }
 
-// Sets colors, font, and text scale as CSS custom properties (e.g. --sm-bg), and
-// loads the font. Returns the resolved palette. The properties go in a stylesheet
-// because some hosts, Discord among them, overwrite the style attribute on <html>.
+// Variables go in a stylesheet and not on <html> because some sites (Discord)
+// overwrite the style attribute. Returns the resolved palette.
 function applyAppearance(doc, appearance, prefersDark, prefix) {
   const palette = resolvePalette(appearance, prefersDark);
   const font = FONTS[appearance.font] ?? FONTS.system;
@@ -184,7 +181,7 @@ function applyAppearance(doc, appearance, prefersDark, prefix) {
   return palette;
 }
 
-// @font-face rules for one font, so only the selected font is ever loaded.
+// Only the selected font gets loaded
 function fontFaceCss(font) {
   const family = font.stack.match(/^"([^"]+)"/)?.[1];
   if (!family || !font.faces) return "";

@@ -1,34 +1,26 @@
-// Reddit content script.
-// Depends on globals from the scripts listed before it in manifest.json.
+// Content script for Reddit.
 //
-// Built for the current site (www.reddit.com). It also runs on old.reddit.com,
-// where the intention check and scroll nudge work but the hiding rules in
-// reddit.css don't match anything.
+// Built for www.reddit.com. Also runs on old.reddit.com, where the intention check
+// and scroll nudge work but nothing in reddit.css matches.
 
-// --- Selectors ---
-// Reddit's current site is built from custom elements (shreddit-*, faceplate-*),
-// whose tag names have been more stable than its classes. Keep every selector
-// the script relies on here; selectors used only for hiding live in reddit.css.
+// Custom element names (shreddit-*, faceplate-*) have been more stable than classes
 const SELECTORS = {
-  // Elements that render counts inside their own shadow DOM, where reddit.css can't reach.
+  // These render counts in their own shadow DOM, reddit.css can't reach them
   shadowHosts:
     "shreddit-post, shreddit-comment, shreddit-comment-action-row, shreddit-subreddit-header",
-  // Posts in an infinite feed: Block mode marks the ones already loaded and hides the rest.
+  // Block mode marks what's loaded and hides anything after
   feedItems: "shreddit-feed :is(article, shreddit-post, shreddit-ad-post)"
 };
 
-// Injected into each shadow root above when Hide metrics is on.
+// Added to each shadow root when Hide metrics is on
 const SHADOW_STYLE_ID = "sm-shadow-metrics";
 const SHADOW_CSS = "faceplate-number { visibility: hidden !important; }";
 
-// --- State ---
-// Per-page state, reset on every navigation.
-let feedHasBottom = false; // Block mode: feed loading has been stopped
+// Reset on navigation
+let feedHasBottom = false; // Block mode stopped the feed
 
-// --- Helpers ---
-
-// "front" pages are the discovery feeds the intention check guards. Opening a
-// specific community or a post (say, from a Google result) goes straight through.
+// "front" = the discovery feeds the intention check is for. Going straight to a
+// community or post (e.g. from Google) skips it.
 function pageType() {
   const path = location.pathname;
   if (path.includes("/comments/")) return "post";
@@ -41,8 +33,6 @@ function pageType() {
   return "other";
 }
 
-// --- Feature: intention check ---
-
 const INTENTION = {
   siteName: "Reddit",
   reasons: [
@@ -54,10 +44,8 @@ const INTENTION = {
   placeholder: 'What exactly? (optional, e.g. "r/learnmath, eigenvalues")'
 };
 
-// --- Feature: hide metrics ---
-// Vote, comment, member, and karma counts all render through <faceplate-number>.
-// reddit.css hides the ones in the page; this adds the same rule inside shadow
-// roots. Shadow roots appear as posts load, so it re-runs on DOM changes.
+// All the counts render through <faceplate-number>. reddit.css hides the ones in the
+// page, this handles shadow roots, which keep appearing as posts load.
 
 function styleShadowRoots(root, enabled) {
   for (const host of root.querySelectorAll(SELECTORS.shadowHosts)) {
@@ -69,7 +57,7 @@ function styleShadowRoots(root, enabled) {
     } else if (!enabled && style) {
       style.remove();
     }
-    styleShadowRoots(shadow, enabled); // nested hosts, e.g. an action row inside a comment
+    styleShadowRoots(shadow, enabled); // nested, e.g. action row inside a comment
   }
 }
 
@@ -90,8 +78,6 @@ function explainMetricsOnce() {
   });
 }
 
-// --- Feature: endless-scroll nudge ---
-
 const scrollNudge = createScrollNudge({
   siteName: "Reddit",
   isFeed: () => pageType() === "front" || pageType() === "listing",
@@ -104,9 +90,6 @@ const scrollNudge = createScrollNudge({
   }
 });
 
-// --- Applying settings ---
-
-// Toggle the <html> classes that drive the CSS-only features.
 function applyPageClasses() {
   const on = siteActive();
   const rd = settings.reddit;
@@ -137,10 +120,7 @@ function onActive() {
   renderIntentionBadge(INTENTION);
 }
 
-// --- Startup ---
-
-// Reddit navigates between feeds and posts without full page loads.
-// "auto" follows Reddit's own theme class, falling back to the system setting.
+// "auto" follows Reddit's theme class, then the system setting
 startSite({
   site: "reddit",
   spa: true,

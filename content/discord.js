@@ -1,37 +1,28 @@
-// Discord content script (the web app at discord.com/channels/...).
-// Depends on globals from the scripts listed before it in manifest.json.
+// Content script for the Discord web app.
 //
-// Discord's class names are generated ("unread_a1b2c3") and change with its
-// builds, so matching relies on data attributes, URLs, and class-name prefixes.
+// Class names are generated ("unread_a1b2c3") and change between builds, so
+// everything here matches on data attributes, URLs, or class-name prefixes.
 
-// --- Selectors ---
-// Selectors used only for hiding live in discord.css.
 const SELECTORS = {
-  // Channel rows in a server's channel list; data-list-item-id is "channels___<id>".
+  // data-list-item-id looks like "channels___<id>"
   channelRows: '[data-list-item-id^="channels___"]'
 };
 
-// Study channels are kept in chrome.storage.local, shared with the popup's Discord section.
-// Each entry is { guild, channel, name, server }.
+// Also read by the popup. Entries are { guild, channel, name, server }.
 const STORAGE_KEY = STORAGE_KEYS.STUDY_CHANNELS;
 
-// Discord updates the tab title, which names the channel, just after the URL.
+// Discord changes the tab title (which has the channel name) a bit after the URL
 const TITLE_UPDATE_DELAY_MS = 500;
-
-// --- State ---
 
 let studyChannels = [];
 
-// --- Helpers ---
-
-// { guild, channel } for /channels/<guild>/<channel>, or null on the friends
-// list, settings, and other non-channel pages. Direct messages use guild "@me".
+// null on the friends list, settings, etc. DMs use guild "@me".
 function currentChannel() {
   const match = location.pathname.match(/^\/channels\/([^/]+)\/(\d+)/);
   return match ? { guild: match[1], channel: match[2] } : null;
 }
 
-// Discord's tab title is "#channel | Server" (or "Discord | #channel | Server").
+// Tab title is "#channel | Server" or "Discord | #channel | Server"
 function channelNames() {
   const parts = document.title.split(" | ").filter((part) => part !== "Discord");
   const name = parts.find((part) => part.startsWith("#")) ?? parts[0] ?? "this channel";
@@ -64,13 +55,13 @@ function unmarkStudyChannel() {
   refresh();
 }
 
-// Prefer a study channel in the server you're in.
+// Prefer one in the current server
 function studyChannelToReturnTo() {
   const guild = currentChannel()?.guild;
   return studyChannels.find((c) => c.guild === guild) ?? studyChannels[0];
 }
 
-// Clicking Discord's own link keeps it a single-page navigation; a full load is the fallback.
+// Clicking Discord's own link keeps it an SPA navigation, full load is the fallback
 function goToChannel({ guild, channel }) {
   closeOverlay();
   const path = `/channels/${guild}/${channel}`;
@@ -79,9 +70,8 @@ function goToChannel({ guild, channel }) {
   else location.assign(path);
 }
 
-// --- Feature: study-channel focus ---
-// Mark the channels you study in from the badge. Other channel rows are dimmed,
-// and opening one checks in with you, at the strictness level's intensity.
+// Channels you mark from the badge stay normal. Everything else gets dimmed and
+// opening one triggers a check-in.
 
 function renderChannelBadge() {
   removeBadge();
@@ -111,7 +101,7 @@ function checkChannel() {
   const ch = currentChannel();
   if (!ch || !studyChannels.length || isStudyChannel(ch.channel) || isOverlayOpen()) return;
 
-  // Ask once per channel per tab session.
+  // Only ask once per channel per tab
   const allowed = session.get("allowedChannels", []);
   if (allowed.includes(ch.channel)) return;
   const allow = () => session.set("allowedChannels", [...allowed, ch.channel]);
@@ -154,7 +144,7 @@ function checkChannel() {
   });
 }
 
-// Tag channel rows that aren't study channels, for discord.css to dim.
+// discord.css dims these
 function tagChannelRows() {
   const focus = siteActive() && settings.discord.studyChannels && studyChannels.length > 0;
   for (const row of document.querySelectorAll(SELECTORS.channelRows)) {
@@ -172,8 +162,6 @@ function setChannelTagging(enabled) {
   setChannelObserving(enabled);
 }
 
-// --- Feature: hide unread badges ---
-
 function explainBadgesOnce() {
   explainOnce(STORAGE_KEYS.DISCORD_BADGES_EXPLAINED, {
     title: "Unread badges on other servers are hidden",
@@ -181,8 +169,6 @@ function explainBadgesOnce() {
     technique: TECHNIQUES.unreadBadges
   });
 }
-
-// --- Applying settings ---
 
 function applyPageClasses() {
   const on = siteActive();
@@ -193,7 +179,6 @@ function applyPageClasses() {
   setChannelTagging(on && dc.studyChannels);
 }
 
-// Redraw everything that depends on the current channel or the study-channel list.
 function refresh() {
   applyPageClasses();
   renderChannelBadge();
@@ -210,12 +195,10 @@ function onActive() {
   if (settings.discord.hideBadges) explainBadgesOnce();
 }
 
-// --- Startup ---
-
 (async function start() {
   ({ [STORAGE_KEY]: studyChannels = [] } = await chrome.storage.local.get(STORAGE_KEY));
 
-  // The popup can remove study channels.
+  // Popup can remove channels
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes[STORAGE_KEY] && settings) {
       studyChannels = changes[STORAGE_KEY].newValue ?? [];
@@ -223,8 +206,7 @@ function onActive() {
     }
   });
 
-  // Discord is a single-page app.
-  // "auto" follows Discord's theme class (theme-dark, theme-darker, theme-midnight...).
+  // "auto" follows Discord's theme class (theme-dark, theme-darker, theme-midnight...)
   startSite({
     site: "discord",
     spa: true,
