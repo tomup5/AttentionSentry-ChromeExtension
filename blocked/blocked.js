@@ -37,6 +37,12 @@ async function render() {
 
   const site = blockedUrl && siteForHost(chosenSites(settings), blockedUrl.hostname);
 
+  // Any site can link here, so without this the page would work as an open redirect
+  if (blockedUrl && !siteForHost(allSites(settings), blockedUrl.hostname)) {
+    showNotListed();
+    return;
+  }
+
   // Blocking got turned off or the site got unlocked (could be from another tab)
   if (blockedUrl && (!site || !isBlockingOn(settings) || (await isUnlocked(site)))) {
     location.replace(blockedUrl.href);
@@ -52,6 +58,21 @@ async function render() {
     body: BODY[settings.mode],
     content: blockedUrl ? el("p", { class: "sm-url", text: blockedUrl.href }) : null,
     buttons: buttons(site),
+    pauseVideos: false
+  });
+}
+
+function showNotListed() {
+  document.title = "Not blocked · Attention Sentry";
+  closeOverlay();
+  showOverlay({
+    title: "This site isn't on your block list",
+    body: "Only continue if you trust this address.",
+    content: el("p", { class: "sm-url", text: blockedUrl.href }),
+    buttons: [
+      { label: "Continue to this site", onClick: () => location.replace(blockedUrl.href) },
+      { label: "Back to studying", primary: true, onClick: leave }
+    ],
     pauseVideos: false
   });
 }

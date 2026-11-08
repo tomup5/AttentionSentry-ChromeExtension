@@ -23,8 +23,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // keep the channel open for the async response
   }
 
-  // Has to come from the blocked page itself, otherwise any content script could unlock sites
-  if (message.type === MESSAGES.UNLOCK_SITE && sender.url?.startsWith(BLOCKED_PAGE)) {
+  // Has to come from the blocked page itself, otherwise any content script could unlock
+  // sites. Top frame only, since other sites are allowed to load that page in an iframe.
+  if (
+    message.type === MESSAGES.UNLOCK_SITE &&
+    sender.frameId === 0 &&
+    sender.url?.startsWith(BLOCKED_PAGE)
+  ) {
     unlockSite(message.siteId).then(sendResponse);
     return true;
   }
@@ -48,7 +53,9 @@ function saveUnlocks(unlocks) {
 
 async function unlockSite(siteId) {
   const settings = await loadSettings();
-  if (settings.mode === "block") return false;
+  if (settings.mode === "block" || !chosenSites(settings).some((s) => s.id === siteId)) {
+    return false;
+  }
 
   const when = Date.now() + UNLOCK_MINUTES * MS_PER_MINUTE;
   await saveUnlocks({ ...(await getUnlocks()), [siteId]: when });

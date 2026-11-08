@@ -139,3 +139,13 @@ test("the blocked page never offers to open a non-web URL", async (t) => {
   assert.equal(page.document.querySelector(".sm-url"), null);
   assert.deepEqual(buttonLabels(page), ["Back to studying"]);
 });
+
+test("the blocked page doesn't forward to an address that isn't on the list", async (t) => {
+  const page = await blocked(t, "hint", "https://phishing.example/login");
+  assert.match(page.document.querySelector("h2").textContent, /isn't on your block list/);
+  assert.equal(
+    page.document.querySelector(".sm-url").textContent,
+    "https://phishing.example/login"
+  );
+  assert.deepEqual(buttonLabels(page), ["Continue to this site", "Back to studying"]);
+});

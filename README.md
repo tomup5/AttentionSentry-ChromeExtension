@@ -49,8 +49,8 @@ See [features by site](#features-by-site) for the full list.
 - **Blocking without reading the page.** Distracting sites are blocked with `declarativeNetRequest` rules, so Chrome stops the load and the extension never sees those pages. Host access is optional and requested per site; without it a site is still blocked, just with Chrome's own error page.
 - **Selectors that survive redesigns.** YouTube's view counts are matched by text ("1.2M views") because its class names and card components keep changing. Reddit's counts render inside shadow DOM, so a style is injected into each shadow root. Discord's generated class names are avoided in favor of data attributes and URLs.
 - **No flash of hidden content.** YouTube's mutation handling is deliberately unthrottled: observer callbacks run before paint, so a count is tagged and hidden before it can appear. Sites without that requirement use a throttled observer.
-- **Single-page apps as a first-class case.** One lifecycle in `startSite()` separates a real page change from a settings change, so changing an accent color can't undo a feed that Block mode stopped.
-- **Page-proof state.** Per-tab session data lives in `chrome.storage.session`, out of reach of the sites' own scripts, instead of the page's `sessionStorage`. User text only ever reaches the DOM through `textContent`.
+- **One lifecycle for single-page apps.** `startSite()` separates a real page change from a settings change, so changing an accent color can't undo a feed that Block mode stopped.
+- **State the page can't read.** Per-tab session data lives in `chrome.storage.session`, out of reach of the sites' own scripts, instead of the page's `sessionStorage`. User text only ever reaches the DOM through `textContent`.
 - **No build step, and nothing to download.** The extension ships as the source you can read here, with fonts bundled instead of fetched from a CDN, so it makes no network requests. npm is used only for development tooling, and none of it ships.
 
 ## Architecture
