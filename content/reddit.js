@@ -1,5 +1,5 @@
 // Reddit content script.
-// Depends on globals from settings.js, techniques.js, ui.js, and common.js (see manifest load order).
+// Depends on globals from the scripts listed before it in manifest.json.
 //
 // Built for the current site (www.reddit.com). It also runs on old.reddit.com,
 // where the intention check and scroll nudge work but the hiding rules in
@@ -24,7 +24,6 @@ const SHADOW_CSS = "faceplate-number { visibility: hidden !important; }";
 // --- State ---
 // Per-page state, reset on every navigation.
 let feedHasBottom = false; // Block mode: feed loading has been stopped
-let lastHref = null;
 
 // --- Helpers ---
 
@@ -60,8 +59,6 @@ const INTENTION = {
 // reddit.css hides the ones in the page; this adds the same rule inside shadow
 // roots. Shadow roots appear as posts load, so it re-runs on DOM changes.
 
-let shadowObserver = null;
-
 function styleShadowRoots(root, enabled) {
   for (const host of root.querySelectorAll(SELECTORS.shadowHosts)) {
     const shadow = host.shadowRoot;
@@ -76,22 +73,17 @@ function styleShadowRoots(root, enabled) {
   }
 }
 
+const setShadowObserving = createPageObserver(() => styleShadowRoots(document, true), {
+  throttleMs: MUTATION_THROTTLE_MS
+});
+
 function setShadowStyling(enabled) {
   styleShadowRoots(document, enabled);
-  if (enabled && !shadowObserver) {
-    shadowObserver = new MutationObserver(throttle(() => styleShadowRoots(document, true), 250));
-    shadowObserver.observe(document.body, { childList: true, subtree: true });
-  } else if (!enabled && shadowObserver) {
-    shadowObserver.disconnect();
-    shadowObserver = null;
-  }
+  setShadowObserving(enabled);
 }
 
-async function explainMetricsOnce() {
-  const { redditMetricsExplained } = await chrome.storage.local.get("redditMetricsExplained");
-  if (redditMetricsExplained) return;
-  await chrome.storage.local.set({ redditMetricsExplained: true });
-  showToast({
+function explainMetricsOnce() {
+  explainOnce(STORAGE_KEYS.REDDIT_METRICS_EXPLAINED, {
     title: "Vote and comment counts are hidden",
     body: "Pick posts by whether they answer your question.",
     technique: TECHNIQUES.votes
@@ -125,50 +117,41 @@ function applyPageClasses() {
   html.toggle("sm-feed-bottom", on && rd.scrollNudge && settings.mode === "block" && feedHasBottom);
 }
 
-function onNavigate() {
-  if (location.href === lastHref) return;
-  lastHref = location.href;
-
+function resetPage() {
   scrollNudge.reset();
   feedHasBottom = false;
-  applyPageClasses();
+}
 
-  if (!siteActive()) return;
-  if (settings.reddit.intention && pageType() === "front" && !session.get("intentionAsked", false)) {
+function checkPage() {
+  if (
+    settings.reddit.intention &&
+    pageType() === "front" &&
+    !session.get("intentionAsked", false)
+  ) {
     showIntentionScreen(INTENTION);
   }
 }
 
-// Runs at startup and on every settings change.
-function applyAll() {
-  applyPageClasses();
-
-  if (!siteActive()) {
-    clearAllUI();
-    removeBadge();
-    return;
-  }
-
+function onActive() {
   if (settings.reddit.hideMetrics) explainMetricsOnce();
   renderIntentionBadge(INTENTION);
-
-  // Force the page logic to re-run in case Attention Sentry was just enabled.
-  lastHref = null;
-  onNavigate();
 }
 
 // --- Startup ---
 
-// Reddit navigates between feeds and posts without full page loads, so startSite() polls the URL.
+// Reddit navigates between feeds and posts without full page loads.
 // "auto" follows Reddit's own theme class, falling back to the system setting.
 startSite({
   site: "reddit",
-  apply: applyAll,
-  onNavigate,
+  spa: true,
+  applyClasses: applyPageClasses,
+  onUrlChange: resetPage,
+  checkPage,
+  onActive,
   isDark: () => {
     const html = document.documentElement.classList;
     if (html.contains("theme-dark")) return true;
     if (html.contains("theme-light")) return false;
-    return matchMedia("(prefers-color-scheme: dark)").matches;
+    return systemPrefersDark();
   }
 });

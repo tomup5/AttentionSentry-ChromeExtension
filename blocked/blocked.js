@@ -26,8 +26,8 @@ function parseBlockedUrl(raw) {
 }
 
 async function isUnlocked(site) {
-  const { unlocks = {} } = await chrome.storage.session.get("unlocks");
-  return unlocks[site.id] > Date.now();
+  const stored = await chrome.storage.session.get(STORAGE_KEYS.UNLOCKS);
+  return stored[STORAGE_KEYS.UNLOCKS]?.[site.id] > Date.now();
 }
 
 function applyTheme() {
@@ -72,17 +72,20 @@ function buttons(site) {
 
 function leave() {
   if (history.length > 1) history.back();
-  else chrome.runtime.sendMessage({ type: "closeTab" });
+  else chrome.runtime.sendMessage({ type: MESSAGES.CLOSE_TAB });
 }
 
 async function unlock(site) {
-  const unlocked = await chrome.runtime.sendMessage({ type: "unlockSite", siteId: site.id });
+  const unlocked = await chrome.runtime.sendMessage({
+    type: MESSAGES.UNLOCK_SITE,
+    siteId: site.id
+  });
   if (unlocked) location.replace(blockedUrl.href);
 }
 
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.settings) settings = mergeSettings(changes.settings.newValue);
-  if (settings && (changes.settings || changes.unlocks)) render();
+  if (settings && (changes.settings || changes[STORAGE_KEYS.UNLOCKS])) render();
 });
 
 prefersDark.addEventListener("change", () => settings && applyTheme());

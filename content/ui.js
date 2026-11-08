@@ -4,22 +4,6 @@
 const TOAST_DURATION_MS = 12000;
 const FOCUSABLE = "button:not(:disabled), select, input, a[href]";
 
-// el("p", { class: "x", text: "hi", onclick: fn }, child1, child2)
-// Text is always set via textContent, so user input is never parsed as HTML.
-function el(tag, props = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(props)) {
-    if (key === "class") node.className = value;
-    else if (key === "text") node.textContent = value;
-    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-    else node.setAttribute(key, value);
-  }
-  for (const child of children) {
-    if (child) node.append(child);
-  }
-  return node;
-}
-
 function whyLine(technique) {
   if (!technique) return null;
   return el(

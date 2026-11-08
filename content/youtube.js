@@ -1,5 +1,5 @@
 // YouTube content script.
-// Depends on globals from settings.js, techniques.js, ui.js, and common.js (see manifest load order).
+// Depends on globals from the scripts listed before it in manifest.json.
 
 // --- Selectors ---
 // YouTube renames elements often; keep every selector the script relies on here.
@@ -14,8 +14,6 @@ const SELECTORS = {
 // Per-page state, reset on every navigation.
 let feedHasBottom = false; // Block mode: feed loading has been stopped
 let shortsSeenOnThisVisit = 0;
-let lastHref = null;
-let lastHandledVideo = null;
 let lastCountedShort = null; // so a settings change doesn't count the same Short twice
 
 // --- Helpers ---
@@ -72,8 +70,6 @@ const METRIC_WORD = /\b(views?|subscribers?|watching|videos?)\b/i;
 // Longer text is a container or a title, never a metadata line.
 const METRIC_MAX_LENGTH = 80;
 
-let metricsObserver = null;
-
 function isMetricText(text) {
   if (!text || text.length > METRIC_MAX_LENGTH) return false;
   return text.split(/\s*[•·]\s*/).some((part) => METRIC_PART.test(part));
@@ -81,10 +77,11 @@ function isMetricText(text) {
 
 // Compact cards show only "1M" next to a play icon; the unit is only in the
 // aria-label ("1 million views").
-function evaluateMetric(el) {
+function evaluateMetric(element) {
   const isMetric =
-    isMetricText(el.textContent.trim()) || isMetricText(el.getAttribute("aria-label")?.trim());
-  el.toggleAttribute("data-sm-metric", isMetric);
+    isMetricText(element.textContent.trim()) ||
+    isMetricText(element.getAttribute("aria-label")?.trim());
+  element.toggleAttribute("data-sm-metric", isMetric);
 }
 
 // Checks a few ancestors, since a metric can be split across styled spans
@@ -94,11 +91,11 @@ function tagMetricText(textNode) {
   const hasMetricWord =
     METRIC_WORD.test(textNode.data) ||
     METRIC_WORD.test(textNode.parentElement?.getAttribute("aria-label") ?? "");
-  let el = textNode.parentElement;
-  for (let depth = 0; el && depth < 3; depth++, el = el.parentElement) {
-    if (!hasMetricWord && !el.hasAttribute("data-sm-metric")) continue;
-    evaluateMetric(el);
-    if (el.hasAttribute("data-sm-metric")) return;
+  let element = textNode.parentElement;
+  for (let depth = 0; element && depth < 3; depth++, element = element.parentElement) {
+    if (!hasMetricWord && !element.hasAttribute("data-sm-metric")) continue;
+    evaluateMetric(element);
+    if (element.hasAttribute("data-sm-metric")) return;
   }
 }
 
@@ -121,22 +118,14 @@ function onMetricMutations(records) {
   }
 }
 
-function setMetricTagging(enabled) {
-  if (enabled && !metricsObserver) {
-    tagMetricsIn(document.body);
-    metricsObserver = new MutationObserver(onMetricMutations);
-    metricsObserver.observe(document.body, { childList: true, characterData: true, subtree: true });
-  } else if (!enabled && metricsObserver) {
-    metricsObserver.disconnect();
-    metricsObserver = null;
-  }
-}
+// Unthrottled, so counts are tagged before the browser paints them.
+const setMetricTagging = createPageObserver(onMetricMutations, {
+  observe: { childList: true, characterData: true, subtree: true },
+  onStart: () => tagMetricsIn(document.body)
+});
 
-async function explainMetricsOnce() {
-  const { metricsExplained } = await chrome.storage.local.get("metricsExplained");
-  if (metricsExplained) return;
-  await chrome.storage.local.set({ metricsExplained: true });
-  showToast({
+function explainMetricsOnce() {
+  explainOnce(STORAGE_KEYS.YOUTUBE_METRICS_EXPLAINED, {
     title: "View counts and likes are hidden",
     body: "Pick videos by whether they'll help you study.",
     technique: TECHNIQUES.socialProof
@@ -179,7 +168,7 @@ function onShortsVisit() {
           ? [{ label: "Close YouTube", primary: true, onClick: closeTab }]
           : [
               { label: "Close YouTube", primary: true, onClick: closeTab },
-              { label: "Keep watching", countdown: 10, onClick: (close) => close() }
+              { label: "Keep watching", countdown: LONG_COUNTDOWN_S, onClick: (close) => close() }
             ]
     });
   }
@@ -214,58 +203,24 @@ async function labelSidebar() {
   );
 }
 
-// Returns the new number of distinct videos this session, or null for a rewatch.
-function recordVideo(id) {
-  const seen = session.get("videosSeen", []);
-  if (seen.includes(id)) return null;
-  seen.push(id);
-  session.set("videosSeen", seen);
-  return seen.length;
-}
-
 function handleWatchPage() {
   const id = currentVideoId();
-  if (!id || id === lastHandledVideo) return;
-  lastHandledVideo = id;
+  if (!id) return;
 
   // Counted even with the guard off, for the popup's session summary.
-  const count = recordVideo(id);
+  const count = session.addToSet("videosSeen", id);
   if (!settings.youtube.rabbitHole) return;
 
   disableAutoplay();
   if (settings.mode !== "block") labelSidebar();
 
   if (count === null || count < 2 || isOverlayOpen()) return;
-
-  const reminder = intentionText()
-    ? `You came here for: ${intentionText()}`
-    : "Is this still part of what you're studying?";
-
-  if (settings.mode === "hint") {
-    showToast({
-      title: `Video #${count} this study session`,
-      body: reminder,
-      technique: TECHNIQUES.recommendations
-    });
-  } else {
-    showOverlay({
-      title: `Video #${count}: is this for your studying?`,
-      body: reminder,
-      technique: TECHNIQUES.recommendations,
-      buttons: [
-        { label: "Go back", onClick: goBack },
-        {
-          label: "Yes, it's for studying",
-          primary: true,
-          countdown: settings.mode === "pause" ? 5 : 0,
-          onClick: (close) => {
-            close();
-            resumeMainVideo();
-          }
-        }
-      ]
-    });
-  }
+  showCountCheckIn({
+    noun: "Video",
+    count,
+    technique: TECHNIQUES.recommendations,
+    onContinue: resumeMainVideo
+  });
 }
 
 // --- Applying settings ---
@@ -286,19 +241,16 @@ function applyPageClasses() {
   }
 }
 
-function onNavigate() {
-  if (location.href === lastHref) return;
-  lastHref = location.href;
-
+function resetPage() {
   scrollNudge.reset();
   feedHasBottom = false;
   if (pageType() !== "shorts") shortsSeenOnThisVisit = 0;
   document.getElementById("sm-sidebar-label")?.remove();
-  applyPageClasses();
+}
 
-  if (!siteActive()) return;
-  // Checked on every navigation, not just at startup: "Back to studying" may
-  // only go back to another YouTube page, which mustn't skip the question.
+function checkPage() {
+  // Checked on every page, not just at startup: "Back to studying" may only go
+  // back to another YouTube page, which mustn't skip the question.
   if (settings.youtube.intention && !session.get("intentionAsked", false)) {
     showIntentionScreen(INTENTION);
   }
@@ -306,34 +258,23 @@ function onNavigate() {
   if (pageType() === "shorts") onShortsVisit();
 }
 
-// Runs at startup and on every settings change.
-function applyAll() {
-  applyPageClasses();
-
-  if (!siteActive()) {
-    clearAllUI();
-    removeBadge();
-    return;
-  }
-
+function onActive() {
   if (settings.youtube.hideMetrics) explainMetricsOnce();
   renderIntentionBadge(INTENTION);
-
-  // Force the page logic to re-run in case Attention Sentry was just enabled.
-  lastHref = null;
-  lastHandledVideo = null;
-  onNavigate();
 }
 
 // --- Startup ---
 
-// YouTube is a single-page app, so the content script only runs once.
-// startSite() polls the URL because Shorts swipes don't always fire YouTube's
-// own navigation event. onNavigate() is a no-op if the URL is unchanged.
+// YouTube is a single-page app, and Shorts swipes don't always fire its own
+// navigation event, so the URL is polled as well.
 // "auto" follows YouTube's own dark theme ([dark] on <html>).
 startSite({
   site: "youtube",
-  apply: applyAll,
-  onNavigate,
+  spa: true,
+  navigationEvent: "yt-navigate-finish",
+  applyClasses: applyPageClasses,
+  onUrlChange: resetPage,
+  checkPage,
+  onActive,
   isDark: () => document.documentElement.hasAttribute("dark")
-}).then(() => document.addEventListener("yt-navigate-finish", onNavigate));
+});

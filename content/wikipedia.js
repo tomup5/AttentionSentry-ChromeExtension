@@ -1,5 +1,5 @@
 // Wikipedia content script (every language, desktop and mobile).
-// Depends on globals from settings.js, techniques.js, ui.js, and common.js (see manifest load order).
+// Depends on globals from the scripts listed before it in manifest.json.
 
 // --- Selectors ---
 // Selectors used only for hiding live in wikipedia.css.
@@ -10,7 +10,8 @@ const SELECTORS = {
   // URL and drops namespaced pages (File:, Help:, Special:...).
   articleLinks: "#mw-content-text a[href]:not(.new, .external, .mw-file-description)",
   // Desktop (Vector) and mobile (Minerva) search boxes, including typeahead suggestions.
-  search: "#searchform, #vector-sticky-search-form, .vector-search-box, .cdx-typeahead-search, .minerva-search-form"
+  search:
+    "#searchform, #vector-sticky-search-form, .vector-search-box, .cdx-typeahead-search, .minerva-search-form"
 };
 
 // The trail keeps its first page and the most recent ones.
@@ -48,7 +49,9 @@ function articleTitle() {
 
 function isArticleLink(link) {
   const path = safeDecode(link.pathname);
-  return link.origin === location.origin && path.startsWith("/wiki/") && !path.slice(6).includes(":");
+  return (
+    link.origin === location.origin && path.startsWith("/wiki/") && !path.slice(6).includes(":")
+  );
 }
 
 // --- Feature: rabbit-hole tracker ---
@@ -109,7 +112,12 @@ function trailElement(trail) {
   const titles = trail.map((page) => page.title);
   const shown = titles.length > 6 ? [...titles.slice(0, 2), "…", ...titles.slice(-3)] : titles;
   const last = shown.pop();
-  return el("p", { class: "sm-trail" }, shown.map((t) => `${t} → `).join(""), el("strong", { text: last }));
+  return el(
+    "p",
+    { class: "sm-trail" },
+    shown.map((t) => `${t} → `).join(""),
+    el("strong", { text: last })
+  );
 }
 
 function goTo(url) {
@@ -152,11 +160,15 @@ function nudge(trail) {
       }
     });
   }
-  buttons.push({ label: `Back to "${start.title}"`, primary: true, onClick: () => goTo(start.url) });
+  buttons.push({
+    label: `Back to "${start.title}"`,
+    primary: true,
+    onClick: () => goTo(start.url)
+  });
   // Block mode, like YouTube's, lets you through only by saying this is what you're studying.
   buttons.push(
     settings.mode === "pause"
-      ? { label: "Keep reading", countdown: 5, onClick: (close) => close() }
+      ? { label: "Keep reading", countdown: SHORT_COUNTDOWN_S, onClick: (close) => close() }
       : { label: "This is my new topic", onClick: startNewTopic }
   );
 
@@ -227,6 +239,10 @@ function watchNavigation() {
 
 const SAVE_DELAY_MS = 300;
 const HIDE_DELAY_MS = 400;
+const SAVED_TOAST_MS = 4000;
+const SAVE_BUTTON_HEIGHT = 30;
+const SAVE_BUTTON_GAP = 4;
+const VIEWPORT_MARGIN = 8;
 
 let saveButton = null;
 let hoveredLink = null;
@@ -234,13 +250,15 @@ let showTimer = null;
 let hideTimer = null;
 
 async function saveTangent({ title, url }) {
-  const { savedTangents = [] } = await chrome.storage.local.get("savedTangents");
+  const { [STORAGE_KEYS.SAVED_TANGENTS]: savedTangents = [] } = await chrome.storage.local.get(
+    STORAGE_KEYS.SAVED_TANGENTS
+  );
   const from = session.get("trail", [])[0]?.title ?? articleTitle();
   const saved = [
     { title, url, from, savedAt: Date.now() },
     ...savedTangents.filter((item) => item.url !== url)
   ].slice(0, SAVED_MAX);
-  await chrome.storage.local.set({ savedTangents: saved });
+  await chrome.storage.local.set({ [STORAGE_KEYS.SAVED_TANGENTS]: saved });
 }
 
 async function onSaveClick() {
@@ -257,7 +275,7 @@ async function onSaveClick() {
     title: `Saved "${title}" for later`,
     body: "Find it in the Attention Sentry popup when you're done studying.",
     technique: first ? TECHNIQUES.saveForLater : null,
-    duration: first ? 12000 : 4000
+    duration: first ? TOAST_DURATION_MS : SAVED_TOAST_MS
   });
 }
 
@@ -270,9 +288,10 @@ function showSaveButton(link) {
   }
   const rect = link.getBoundingClientRect();
   // Above the link, where it won't cover Wikipedia's own preview popup below it.
-  const top = rect.top > 34 ? rect.top - 30 : rect.bottom + 4;
+  const fitsAbove = rect.top > SAVE_BUTTON_HEIGHT + SAVE_BUTTON_GAP;
+  const top = fitsAbove ? rect.top - SAVE_BUTTON_HEIGHT : rect.bottom + SAVE_BUTTON_GAP;
   saveButton.style.top = `${top}px`;
-  saveButton.style.left = `${Math.max(8, rect.left)}px`;
+  saveButton.style.left = `${Math.max(VIEWPORT_MARGIN, rect.left)}px`;
   document.body.append(saveButton);
 }
 
@@ -318,19 +337,12 @@ function applyPageClasses() {
 
 let articleHandled = false;
 
-// Runs at startup and on every settings change.
-function applyAll() {
-  applyPageClasses();
+function resetPage() {
+  articleHandled = false;
+}
 
-  if (!siteActive()) {
-    clearAllUI();
-    removeBadge();
-    hideSaveButton();
-    return;
-  }
-  if (!settings.wikipedia.saveTangents) hideSaveButton();
-
-  // The trail is updated once per page load; settings changes only redraw the badge.
+// The trail is updated once per page load; settings changes only redraw the badge.
+function checkPage() {
   if (articleHandled) {
     renderTopicBadge();
   } else {
@@ -339,25 +351,28 @@ function applyAll() {
   }
 }
 
-// --- Startup ---
+function onActive() {
+  if (!settings.wikipedia.saveTangents) hideSaveButton();
+}
 
-// Pages restored from the back/forward cache count as a new page load for the trail.
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) articleHandled = false;
-});
+// --- Startup ---
 
 watchNavigation();
 watchLinkHover();
 
-// Wikipedia does full page loads, so there's no navigation to poll for.
+// Wikipedia does full page loads, so there's no navigation to follow.
 // "auto" follows Wikipedia's own dark mode setting.
 startSite({
   site: "wikipedia",
-  apply: applyAll,
+  applyClasses: applyPageClasses,
+  onUrlChange: resetPage,
+  checkPage,
+  onActive,
+  onInactive: hideSaveButton,
   isDark: () => {
     const html = document.documentElement.classList;
     if (html.contains("skin-theme-clientpref-night")) return true;
     if (html.contains("skin-theme-clientpref-day")) return false;
-    return matchMedia("(prefers-color-scheme: dark)").matches;
+    return systemPrefersDark();
   }
 });

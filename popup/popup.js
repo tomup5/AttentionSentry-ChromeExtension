@@ -1,4 +1,5 @@
-// Popup: renders the current settings and saves changes.
+// Popup entry point: holds the settings, renders them, and saves changes. The other
+// popup/ scripts each own one part of the page and are loaded before this one.
 // Content scripts pick up changes through chrome.storage.onChanged.
 
 const MODES = {
@@ -13,115 +14,7 @@ const MODES = {
   }
 };
 
-// One collapsible section per site. Each feature is a row with a switch for
-// settings[site][key]; `sub` adds a checkbox or number below the description,
-// and `extra` names a list built by buildExtra().
-const SITE_SECTIONS = [
-  {
-    key: "youtube",
-    name: "YouTube",
-    icon: "youtube",
-    features: [
-      { key: "intention", title: "Intention check", desc: "Ask why you're opening YouTube before it loads." },
-      {
-        key: "hideMetrics",
-        title: "Hide metrics",
-        desc: "Hide views, likes, and subscriber counts.",
-        sub: { type: "checkbox", key: "blurThumbnails", label: "Blur thumbnails until hover" }
-      },
-      {
-        key: "scrollNudge",
-        title: "Scroll limit",
-        desc: "Step in after a long scroll through the feed or Shorts.",
-        sub: { type: "number", key: "scrollScreens", min: 3, max: 100, before: "After", after: "screens" }
-      },
-      { key: "rabbitHole", title: "Rabbit-hole guard", desc: "Turn off autoplay and check in between videos." }
-    ]
-  },
-  {
-    key: "reddit",
-    name: "Reddit",
-    icon: "reddit",
-    features: [
-      { key: "intention", title: "Intention check", desc: "Ask why you're here when you open the home or Popular feed." },
-      { key: "hideMetrics", title: "Hide metrics", desc: "Hide upvotes, comment counts, members, and karma." },
-      {
-        key: "scrollNudge",
-        title: "Scroll limit",
-        desc: "Step in after a long scroll through a feed.",
-        sub: { type: "number", key: "scrollScreens", min: 3, max: 100, before: "After", after: "screens" }
-      },
-      { key: "hideSidebars", title: "Hide sidebars", desc: "Hide Popular, Explore, Recent, and the right-hand column." }
-    ]
-  },
-  {
-    key: "wikipedia",
-    name: "Wikipedia",
-    icon: "wikipedia",
-    features: [
-      {
-        key: "rabbitHole",
-        title: "Rabbit-hole tracker",
-        desc: "Count the links you follow away from where you started, and check in.",
-        sub: { type: "number", key: "hopLimit", min: 2, max: 50, before: "After", after: "links" },
-        sub2: { type: "checkbox", key: "topicBadge", label: "Show a link back to where you started" }
-      },
-      {
-        key: "saveTangents",
-        title: "Save tangents",
-        desc: "Hover a link to save it for after you study.",
-        extra: "savedTangents"
-      },
-      { key: "hideMainPage", title: "Hide Main Page extras", desc: "Hide Did you know, In the news, and Random article." }
-    ]
-  },
-  {
-    key: "discord",
-    name: "Discord",
-    icon: "discord",
-    features: [
-      {
-        key: "studyChannels",
-        title: "Study-channel focus",
-        desc: "Mark the channels you study in. Others are dimmed and check in when you open them.",
-        extra: "studyChannels"
-      },
-      { key: "hideBadges", title: "Hide unread badges", desc: "Hide mention counts and unread dots on servers." }
-    ]
-  },
-  {
-    key: "nyt",
-    name: "New York Times",
-    icon: "nyt",
-    features: [
-      { key: "intention", title: "Intention check", desc: "Ask why you're here when you open the front page." },
-      { key: "games", title: "Games check", desc: "Step in before Wordle, Connections, and other games." },
-      {
-        key: "articleCheck",
-        title: "Article check-in",
-        desc: "Check in once you've read several articles.",
-        sub: { type: "number", key: "articleLimit", min: 2, max: 50, before: "From article", after: "on" }
-      },
-      { key: "hideRecirc", title: "Hide 'More to read'", desc: "Hide Most Popular, Trending, and recommended articles." }
-    ]
-  }
-];
-
-// What a blocked site does in each strictness mode (see blocked/blocked.js).
-const SITE_MODE_NOTES = {
-  hint: "Blocked sites show a reminder with an Open anyway button.",
-  pause: `Blocked sites can open for ${UNLOCK_MINUTES} minutes after a short wait.`,
-  block: "Blocked sites stay closed until you turn Attention Sentry off."
-};
-
-// Keeps the settings object well under chrome.storage.sync's per-item size limit.
-const MAX_CUSTOM_SITES = 50;
-
-const prefersDark = matchMedia("(prefers-color-scheme: dark)");
-
 let settings;
-// Keys of the expanded sections, remembered in chrome.storage.local.
-let openSections = [];
 
 const mainView = document.getElementById("main-view");
 const settingsView = document.getElementById("settings-view");
@@ -130,218 +23,7 @@ const statusText = document.getElementById("status-text");
 const controls = document.getElementById("controls");
 const modeButtons = document.querySelectorAll("#mode button");
 const modeDesc = document.getElementById("mode-desc");
-const fontSelect = document.getElementById("font");
-const backgroundGroup = document.getElementById("background");
-const accentGroup = document.getElementById("accent");
-const textSizeGroup = document.getElementById("text-size");
-const sessionSection = document.getElementById("session");
-const sessionTitle = sessionSection.querySelector(".section-title");
-const sessionGoal = document.getElementById("session-goal");
-const sessionStats = document.getElementById("session-stats");
-const blockerSection = document.querySelector('[data-section="siteBlock"]');
-const siteBlockInput = document.getElementById("siteBlock");
-const sitesCount = document.getElementById("sites-count");
-const sitesDesc = document.getElementById("sites-desc");
-const siteOptions = document.getElementById("site-options");
-const siteList = document.getElementById("site-list");
-const addSiteForm = document.getElementById("add-site");
-const addSiteInput = document.getElementById("add-site-input");
-const addSiteError = document.getElementById("add-site-error");
-const siteAccess = document.getElementById("site-access");
 const saveError = document.getElementById("save-error");
-
-// Filled in by buildSiteSections().
-// Each [data-setting] input maps to settings[site][key], written "site.key".
-let featureInputs = [];
-const lists = {};
-
-// el("p", { class: "x", text: "hi", onclick: fn }, child1, child2), as in content/ui.js.
-function el(tag, props = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(props)) {
-    if (key === "class") node.className = value;
-    else if (key === "text") node.textContent = value;
-    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-    else node.setAttribute(key, value);
-  }
-  for (const child of children) {
-    if (child) node.append(child);
-  }
-  return node;
-}
-
-// --- Building the site sections ---
-
-function switchControl(setting, label) {
-  return el(
-    "label",
-    { class: "switch" },
-    el("input", { type: "checkbox", "data-setting": setting, "aria-label": label }),
-    el("span", { class: "slider" })
-  );
-}
-
-function subOption(site, sub) {
-  const setting = `${site}.${sub.key}`;
-  if (sub.type === "checkbox") {
-    return el(
-      "label",
-      { class: "sub-option" },
-      el("input", { type: "checkbox", "data-setting": setting }),
-      sub.label
-    );
-  }
-  return el(
-    "label",
-    { class: "sub-option" },
-    sub.before,
-    el("input", { type: "number", min: sub.min, max: sub.max, "data-setting": setting }),
-    sub.after
-  );
-}
-
-// Lists kept in chrome.storage.local by the content scripts.
-function buildExtra(name) {
-  if (name === "savedTangents") {
-    lists.savedTangents = el("ul");
-    return el(
-      "div",
-      { class: "saved", id: "saved-tangents", hidden: "" },
-      el(
-        "div",
-        { class: "saved-head" },
-        el("span", { text: "Saved for later" }),
-        el("button", { class: "text-button", type: "button", text: "Clear", onclick: clearSavedTangents })
-      ),
-      lists.savedTangents
-    );
-  }
-  lists.studyChannels = el("ul");
-  lists.studyChannelsEmpty = el("p", {
-    class: "saved-empty",
-    text: "None yet. Open a channel in Discord and click “Mark as study channel”."
-  });
-  return el(
-    "div",
-    { class: "saved" },
-    el("div", { class: "saved-head" }, el("span", { text: "Study channels" })),
-    lists.studyChannels,
-    lists.studyChannelsEmpty
-  );
-}
-
-function featureRow(site, feature) {
-  return el(
-    "div",
-    { class: "row" },
-    el(
-      "div",
-      { class: "row-text" },
-      el("h3", { text: feature.title }),
-      el("p", { text: feature.desc }),
-      feature.sub && subOption(site, feature.sub),
-      feature.sub2 && subOption(site, feature.sub2),
-      feature.extra && buildExtra(feature.extra)
-    ),
-    switchControl(`${site}.${feature.key}`, feature.title)
-  );
-}
-
-function buildSiteSections() {
-  const chevron = blockerSection.querySelector(".chevron");
-  for (const site of SITE_SECTIONS) {
-    const head = el(
-      "div",
-      { class: "site-head" },
-      el(
-        "button",
-        { class: "site-toggle", type: "button", "aria-expanded": "false" },
-        chevron.cloneNode(true),
-        el("img", { class: "site-icon", src: `../icons/sites/${site.icon}.png`, alt: "" }),
-        el("span", { class: "site-name", text: site.name }),
-        el("span", { class: "count" })
-      ),
-      switchControl(`${site.key}.enabled`, `${site.name} features`)
-    );
-    head.querySelector(".switch").title = `Turn ${site.name} features on or off`;
-
-    const body = el("div", { class: "site-body", hidden: "" });
-    body.append(...site.features.map((feature) => featureRow(site.key, feature)));
-    blockerSection.before(el("section", { class: "section site", "data-section": site.key }, head, body));
-  }
-  featureInputs = document.querySelectorAll("[data-setting]");
-
-  // Up and down arrows in every section header, just before its switch.
-  for (const section of document.querySelectorAll("[data-section]")) {
-    const key = section.dataset.section;
-    const name = section.querySelector(".site-name").textContent;
-    const arrow = (dir, label, d) =>
-      el("button", { class: "move-button", type: "button", "data-dir": dir, title: label, "aria-label": `${label}: ${name}` }, moveIcon(d));
-    const move = el(
-      "div",
-      { class: "move" },
-      arrow("-1", "Move up", "M6 15l6-6 6 6"),
-      arrow("1", "Move down", "M6 9l6 6 6-6")
-    );
-    move.addEventListener("click", (e) => {
-      const button = e.target.closest(".move-button");
-      if (button) moveSection(key, Number(button.dataset.dir));
-    });
-    section.querySelector(".site-head .switch").before(move);
-  }
-}
-
-function moveIcon(d) {
-  const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("width", "12");
-  svg.setAttribute("height", "12");
-  svg.setAttribute("aria-hidden", "true");
-  const path = document.createElementNS(ns, "path");
-  for (const [attr, value] of Object.entries({
-    d,
-    fill: "none",
-    stroke: "currentColor",
-    "stroke-width": "2.4",
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round"
-  })) {
-    path.setAttribute(attr, value);
-  }
-  svg.append(path);
-  return svg;
-}
-
-// The saved order, minus keys that no longer exist, plus any new sections at the end.
-function currentOrder() {
-  const keys = [...SITE_SECTIONS.map((s) => s.key), "siteBlock"];
-  const saved = Array.isArray(settings.sectionOrder) ? settings.sectionOrder : [];
-  return [...saved.filter((k, i) => keys.includes(k) && saved.indexOf(k) === i), ...keys.filter((k) => !saved.includes(k))];
-}
-
-function moveSection(key, dir) {
-  const order = currentOrder();
-  const from = order.indexOf(key);
-  const to = from + dir;
-  if (to < 0 || to >= order.length) return;
-  [order[from], order[to]] = [order[to], order[from]];
-  settings.sectionOrder = order;
-  update();
-}
-
-// Puts the sections in the saved order and disables the arrows at either end.
-function renderOrder() {
-  const order = currentOrder();
-  order.forEach((key, i) => {
-    const section = document.querySelector(`[data-section="${key}"]`);
-    controls.append(section);
-    section.querySelector('[data-dir="-1"]').disabled = i === 0;
-    section.querySelector('[data-dir="1"]').disabled = i === order.length - 1;
-  });
-}
-
-// --- Rendering ---
 
 function render() {
   studyModeInput.checked = settings.studyMode;
@@ -368,7 +50,9 @@ function render() {
     const features = [...section.querySelectorAll(".row > .switch input")];
     const on = features.filter((input) => input.checked).length;
     const enabled = settings[key].enabled;
-    section.querySelector(".count").textContent = enabled ? `${on} of ${features.length} on` : "Off";
+    section.querySelector(".count").textContent = enabled
+      ? `${on} of ${features.length} on`
+      : "Off";
     section.querySelector(".site-body").classList.toggle("disabled", !enabled);
   }
 
@@ -376,231 +60,6 @@ function render() {
   renderSites();
   renderAppearance();
 }
-
-function renderSections() {
-  for (const section of document.querySelectorAll("[data-section]")) {
-    const open = openSections.includes(section.dataset.section);
-    section.querySelector(".site-body").hidden = !open;
-    section.querySelector(".site-toggle").setAttribute("aria-expanded", open);
-  }
-}
-
-function toggleSection(key) {
-  openSections = openSections.includes(key)
-    ? openSections.filter((k) => k !== key)
-    : [...openSections, key];
-  chrome.storage.local.set({ openSections });
-  renderSections();
-}
-
-function renderSites() {
-  const { siteBlock } = settings;
-  siteBlockInput.checked = siteBlock.enabled;
-  siteOptions.classList.toggle("disabled", !siteBlock.enabled);
-  sitesDesc.textContent = SITE_MODE_NOTES[settings.mode];
-  sitesCount.textContent = siteBlock.enabled ? `${chosenSites(settings).length} blocked` : "Off";
-
-  // Built-in sites are created once; custom ones are rebuilt since they come and go.
-  siteList.querySelectorAll(".custom").forEach((node) => node.remove());
-  siteBlock.custom.forEach((domain) => siteList.append(siteOption(customSite(domain), true)));
-  for (const input of siteList.querySelectorAll("input")) {
-    input.checked = !siteBlock.excluded.includes(input.dataset.site);
-  }
-
-  renderSiteAccess();
-}
-
-// Shown when some chosen sites can only be blocked with Chrome's error page,
-// because the user didn't grant access to redirect them.
-async function renderSiteAccess() {
-  const origins = chosenSites(settings).flatMap((site) => site.domains).map(originPattern);
-  const granted = !origins.length || (await chrome.permissions.contains({ origins }));
-  siteAccess.hidden = granted || !settings.siteBlock.enabled;
-}
-
-function siteOption(site, removable) {
-  const option = el(
-    "label",
-    { class: removable ? "site-option custom" : "site-option" },
-    el("input", { type: "checkbox", "data-site": site.id }),
-    el("span", { text: site.label, title: site.label })
-  );
-
-  if (removable) {
-    option.append(
-      removeButton(site.label, (e) => {
-        e.preventDefault(); // don't toggle the checkbox in the same label
-        settings.siteBlock.custom = settings.siteBlock.custom.filter((d) => d !== site.domains[0]);
-        settings.siteBlock.excluded = settings.siteBlock.excluded.filter((id) => id !== site.id);
-        update();
-      })
-    );
-  }
-  return option;
-}
-
-function removeButton(label, onclick) {
-  return el("button", {
-    type: "button",
-    class: "site-remove",
-    text: "×",
-    title: `Remove ${label}`,
-    "aria-label": `Remove ${label}`,
-    onclick
-  });
-}
-
-// Ask for access to the sites so they can be redirected to the Attention Sentry page.
-// Must be called straight from a click handler: Chrome only shows the prompt
-// in response to a user gesture. The popup may close while the prompt is open,
-// so callers save their settings first.
-function requestSiteAccess(sites) {
-  const origins = sites.flatMap((site) => site.domains).map(originPattern);
-  if (!origins.length) return;
-  chrome.permissions
-    .request({ origins })
-    .catch(() => {})
-    .then(() => settings && renderSiteAccess());
-}
-
-function showAddSiteError(message) {
-  addSiteError.textContent = message;
-  addSiteError.hidden = false;
-}
-
-// --- Saved lists (Wikipedia tangents, Discord study channels) ---
-
-function isWikipediaUrl(raw) {
-  try {
-    const url = new URL(raw);
-    return url.protocol === "https:" && /(^|\.)wikipedia\.org$/.test(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
-function renderSavedTangents(saved = []) {
-  document.getElementById("saved-tangents").hidden = !saved.length;
-  lists.savedTangents.replaceChildren(
-    ...saved.map((item) =>
-      el(
-        "li",
-        {},
-        el("button", {
-          type: "button",
-          class: "text-button saved-name",
-          text: item.title,
-          title: `${item.title}, saved while reading about ${item.from}`,
-          onclick: () => isWikipediaUrl(item.url) && chrome.tabs.create({ url: item.url })
-        }),
-        removeButton(item.title, () => removeSavedTangent(item.url))
-      )
-    )
-  );
-}
-
-async function removeSavedTangent(url) {
-  const { savedTangents = [] } = await chrome.storage.local.get("savedTangents");
-  await chrome.storage.local.set({ savedTangents: savedTangents.filter((i) => i.url !== url) });
-}
-
-function clearSavedTangents() {
-  chrome.storage.local.set({ savedTangents: [] });
-}
-
-function renderStudyChannels(channels = []) {
-  lists.studyChannelsEmpty.hidden = channels.length > 0;
-  lists.studyChannels.replaceChildren(
-    ...channels.map((c) =>
-      el(
-        "li",
-        {},
-        el("span", { class: "saved-name", text: c.server ? `${c.name} · ${c.server}` : c.name }),
-        removeButton(c.name, () => removeStudyChannel(c.channel))
-      )
-    )
-  );
-}
-
-async function removeStudyChannel(channel) {
-  const { discordStudyChannels = [] } = await chrome.storage.local.get("discordStudyChannels");
-  await chrome.storage.local.set({
-    discordStudyChannels: discordStudyChannels.filter((c) => c.channel !== channel)
-  });
-}
-
-// --- Appearance ---
-
-function renderAppearance() {
-  const { appearance } = settings;
-  const palette = applyAppearance(document, appearance, prefersDark.matches, "");
-  document.documentElement.style.colorScheme = palette.dark ? "dark" : "light";
-
-  fontSelect.value = appearance.font;
-  markSelected(backgroundGroup, appearance.background);
-  markSelected(accentGroup, appearance.accent);
-  markSelected(textSizeGroup, appearance.textSize);
-
-  // Accent swatches preview the shade that will actually be used on this background.
-  for (const swatch of accentGroup.children) {
-    const accent = ACCENTS[swatch.dataset.value];
-    swatch.style.background = accent.light
-      ? palette.dark
-        ? accent.dark
-        : accent.light
-      : resolveTheme(appearance.background, prefersDark.matches).accent;
-  }
-}
-
-function markSelected(group, value) {
-  for (const option of group.children) {
-    const selected = option.dataset.value === value;
-    option.setAttribute("aria-checked", selected);
-    option.classList.toggle("active", selected);
-  }
-}
-
-// --- Session ---
-
-// Session data is written by the content scripts into chrome.storage.session,
-// keyed by tab, with one slot per site and `lastSite` naming the current one.
-async function renderSession() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const key = tab && `tab-${tab.id}`;
-  const entry = key ? (await chrome.storage.session.get(key))[key] : null;
-  const site = SITE_SECTIONS.find((s) => s.key === entry?.lastSite);
-  const data = site ? entry[site.key] : null;
-
-  const videos = data?.videosSeen?.length ?? 0;
-  const articles = data?.articlesSeen?.length ?? 0;
-  const minutes = Math.round((data?.activeMs ?? 0) / 60000);
-  const intent = data?.intention;
-  const goal =
-    intent && intent.reason !== "skipped"
-      ? intent.note
-        ? `${intent.label}: "${intent.note}"`
-        : intent.label
-      : null;
-
-  const stats = [];
-  if (videos) stats.push(`${videos} ${videos === 1 ? "video" : "videos"}`);
-  if (articles) stats.push(`${articles} ${articles === 1 ? "article" : "articles"}`);
-  stats.push(formatDuration(minutes));
-
-  sessionSection.hidden = !goal && !videos && !articles && !minutes;
-  if (site) sessionTitle.textContent = `This session on ${site.name}`;
-  sessionGoal.textContent = goal ? `Goal: ${goal}` : "No goal set";
-  sessionStats.textContent = stats.join(" · ");
-}
-
-function formatDuration(minutes) {
-  if (minutes < 1) return "under a minute";
-  if (minutes < 60) return `${minutes} min`;
-  const rest = minutes % 60;
-  return `${Math.floor(minutes / 60)} hr${rest ? ` ${rest} min` : ""}`;
-}
-
-// --- Saving ---
 
 // A failed save (usually a chrome.storage.sync quota) puts the popup back in step
 // with what's actually stored, so it never shows a change that didn't happen.
@@ -623,53 +82,10 @@ function showView(view) {
   settingsView.hidden = view !== settingsView;
 }
 
-// A radio-style button that sets settings.appearance[setting] = value when clicked.
-function radioOption(group, setting, value, label, className) {
-  const option = document.createElement("button");
-  option.className = className;
-  option.dataset.value = value;
-  option.title = label;
-  option.setAttribute("role", "radio");
-  option.setAttribute("aria-label", label);
-  option.addEventListener("click", () => {
-    settings.appearance[setting] = value;
-    update();
-  });
-  group.append(option);
-  return option;
-}
-
-function buildAppearanceControls() {
-  for (const [key, font] of Object.entries(FONTS)) {
-    fontSelect.append(new Option(font.label, key));
-  }
-
-  for (const key of BACKGROUND_OPTIONS) {
-    const label = key === "auto" ? "Match system" : THEMES[key].label;
-    const swatch = radioOption(backgroundGroup, "background", key, label, "swatch");
-    swatch.dataset.theme = key;
-    if (key !== "auto") swatch.style.background = THEMES[key].bg;
-  }
-
-  for (const [key, accent] of Object.entries(ACCENTS)) {
-    radioOption(accentGroup, "accent", key, accent.label, "swatch").dataset.accent = key;
-  }
-
-  for (const [key, size] of Object.entries(TEXT_SIZES)) {
-    radioOption(textSizeGroup, "textSize", key, size.label, "").textContent = size.label;
-  }
-}
-
 // --- Startup ---
 // The site sections are built first so the listeners below can find their inputs.
 
-buildAppearanceControls();
 buildSiteSections();
-for (const [id, site] of Object.entries(BLOCKABLE_SITES)) {
-  siteList.append(siteOption({ id, ...site }, false));
-}
-
-// --- Event listeners ---
 
 studyModeInput.addEventListener("change", () => {
   settings.studyMode = studyModeInput.checked;
@@ -692,83 +108,27 @@ featureInputs.forEach((input) => {
 });
 
 document.querySelectorAll(".site-toggle").forEach((toggle) => {
-  toggle.addEventListener("click", () => toggleSection(toggle.closest("[data-section]").dataset.section));
-});
-
-siteBlockInput.addEventListener("change", () => {
-  settings.siteBlock.enabled = siteBlockInput.checked;
-  update();
-  if (settings.siteBlock.enabled) requestSiteAccess(chosenSites(settings));
-});
-
-siteList.addEventListener("change", (e) => {
-  const id = e.target.dataset.site;
-  if (!id) return;
-  const excluded = settings.siteBlock.excluded.filter((x) => x !== id);
-  if (!e.target.checked) excluded.push(id);
-  settings.siteBlock.excluded = excluded;
-  update();
-  if (e.target.checked) requestSiteAccess(allSites(settings).filter((site) => site.id === id));
-});
-
-addSiteForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const domain = normalizeDomain(addSiteInput.value);
-  const existing = domain && siteForHost(allSites(settings), domain);
-  if (!domain) return showAddSiteError("That doesn't look like a website address.");
-  if (existing) return showAddSiteError(`${existing.label} is already on the list.`);
-  if (settings.siteBlock.custom.length >= MAX_CUSTOM_SITES) {
-    return showAddSiteError(`You can add up to ${MAX_CUSTOM_SITES} sites.`);
-  }
-
-  settings.siteBlock.custom = [...settings.siteBlock.custom, domain];
-  addSiteInput.value = "";
-  addSiteError.hidden = true;
-  update();
-  requestSiteAccess([customSite(domain)]);
-});
-
-addSiteInput.addEventListener("input", () => {
-  addSiteError.hidden = true;
-});
-
-document.getElementById("allow-access").addEventListener("click", () => {
-  requestSiteAccess(chosenSites(settings));
-});
-
-chrome.permissions.onAdded.addListener(() => settings && renderSiteAccess());
-chrome.permissions.onRemoved.addListener(() => settings && renderSiteAccess());
-
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local") return;
-  if (changes.savedTangents) renderSavedTangents(changes.savedTangents.newValue);
-  if (changes.discordStudyChannels) renderStudyChannels(changes.discordStudyChannels.newValue);
-});
-
-fontSelect.addEventListener("change", () => {
-  settings.appearance.font = fontSelect.value;
-  update();
-});
-
-document.getElementById("reset-appearance").addEventListener("click", () => {
-  settings.appearance = { ...DEFAULT_SETTINGS.appearance };
-  update();
+  toggle.addEventListener("click", () =>
+    toggleSection(toggle.closest("[data-section]").dataset.section)
+  );
 });
 
 document.getElementById("open-settings").addEventListener("click", () => showView(settingsView));
 document.getElementById("close-settings").addEventListener("click", () => showView(mainView));
 
-prefersDark.addEventListener("change", () => settings && renderAppearance());
-
 Promise.all([
   loadSettings(),
-  chrome.storage.local.get(["openSections", "savedTangents", "discordStudyChannels"])
+  chrome.storage.local.get([
+    STORAGE_KEYS.OPEN_SECTIONS,
+    STORAGE_KEYS.SAVED_TANGENTS,
+    STORAGE_KEYS.STUDY_CHANNELS
+  ])
 ]).then(([loaded, local]) => {
   settings = loaded;
-  openSections = local.openSections ?? [];
+  openSections = local[STORAGE_KEYS.OPEN_SECTIONS] ?? [];
   render();
   renderSections();
-  renderSavedTangents(local.savedTangents);
-  renderStudyChannels(local.discordStudyChannels);
+  renderSavedTangents(local[STORAGE_KEYS.SAVED_TANGENTS]);
+  renderStudyChannels(local[STORAGE_KEYS.STUDY_CHANNELS]);
 });
 renderSession();

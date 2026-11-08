@@ -40,7 +40,7 @@
         Couldn't save that change, so your previous settings are still in place.
       </p>
 
-      <!-- Filled in by popup.js when the active tab has a study session on a supported site. -->
+      <!-- Filled in by session-summary.js when the active tab has a study session on a supported site. -->
       <section class="section session" id="session" hidden>
         <h2 class="section-title">This session</h2>
         <p class="session-goal" id="session-goal"></p>
@@ -58,7 +58,7 @@
           <p class="hint-text" id="mode-desc"></p>
         </section>
 
-        <!-- One collapsible section per site goes here, built by popup.js from SITE_SECTIONS. -->
+        <!-- One collapsible section per site goes here, built by site-sections.js. -->
 
         <section class="section site" data-section="siteBlock">
           <div class="site-head">
@@ -86,7 +86,7 @@
             <p class="hint-text" id="sites-desc"></p>
 
             <div class="site-options" id="site-options">
-              <!-- Filled in by popup.js from BLOCKABLE_SITES and the user's custom sites. -->
+              <!-- Filled in by site-blocker.js. -->
               <div class="site-list" id="site-list"></div>
 
               <form class="add-site" id="add-site">
@@ -193,8 +193,14 @@
     </div>
 
     <script src="../shared/settings.js"></script>
+    <script src="../shared/common.js"></script>
     <script src="../shared/appearance.js"></script>
     <script src="../shared/sites.js"></script>
+    <script src="site-sections.js"></script>
+    <script src="saved-lists.js"></script>
+    <script src="site-blocker.js"></script>
+    <script src="appearance-panel.js"></script>
+    <script src="session-summary.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
