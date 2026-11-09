@@ -45,6 +45,7 @@ function isWikipediaUrl(raw) {
   }
 }
 
+/** @param {any} [saved] */
 function renderSavedTangents(saved = []) {
   document.getElementById("saved-tangents").hidden = !saved.length;
   lists.savedTangents.replaceChildren(
@@ -66,6 +67,7 @@ function renderSavedTangents(saved = []) {
 }
 
 async function removeSavedTangent(url) {
+  /** @type {Record<string, any>} */
   const { [STORAGE_KEYS.SAVED_TANGENTS]: savedTangents = [] } = await chrome.storage.local.get(
     STORAGE_KEYS.SAVED_TANGENTS
   );
@@ -78,6 +80,7 @@ function clearSavedTangents() {
   chrome.storage.local.set({ [STORAGE_KEYS.SAVED_TANGENTS]: [] });
 }
 
+/** @param {any} [channels] */
 function renderStudyChannels(channels = []) {
   lists.studyChannelsEmpty.hidden = channels.length > 0;
   lists.studyChannels.replaceChildren(
@@ -93,6 +96,7 @@ function renderStudyChannels(channels = []) {
 }
 
 async function removeStudyChannel(channel) {
+  /** @type {Record<string, any>} */
   const { [STORAGE_KEYS.STUDY_CHANNELS]: studyChannels = [] } = await chrome.storage.local.get(
     STORAGE_KEYS.STUDY_CHANNELS
   );

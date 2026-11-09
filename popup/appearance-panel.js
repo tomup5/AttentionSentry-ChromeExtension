@@ -1,7 +1,7 @@
 // Settings view: font, background, accent, text size
 
 const prefersDark = matchMedia("(prefers-color-scheme: dark)");
-const fontSelect = document.getElementById("font");
+const fontSelect = /** @type {HTMLSelectElement} */ (document.getElementById("font"));
 const backgroundGroup = document.getElementById("background");
 const accentGroup = document.getElementById("accent");
 const textSizeGroup = document.getElementById("text-size");
@@ -17,7 +17,7 @@ function renderAppearance() {
   markSelected(textSizeGroup, appearance.textSize);
 
   // Show the shade that'll actually get used on this background
-  for (const swatch of accentGroup.children) {
+  for (const swatch of /** @type {HTMLCollectionOf<HTMLElement>} */ (accentGroup.children)) {
     swatch.style.background = resolvePalette(
       { background: appearance.background, accent: swatch.dataset.value },
       prefersDark.matches

@@ -201,7 +201,7 @@ function renderTopicBadge() {
 function watchNavigation() {
   document.addEventListener(
     "click",
-    (event) => {
+    /** @param {any} event */ (event) => {
       if (!siteActive()) return;
       const link = event.target.closest?.("a[href]");
       if (!link) return;
@@ -215,7 +215,7 @@ function watchNavigation() {
   );
   document.addEventListener(
     "submit",
-    (event) => {
+    /** @param {any} event */ (event) => {
       if (siteActive() && event.target.closest?.(SELECTORS.search)) {
         session.set("searched", { at: Date.now() });
       }
@@ -239,6 +239,7 @@ let showTimer = null;
 let hideTimer = null;
 
 async function saveTangent({ title, url }) {
+  /** @type {Record<string, any>} */
   const { [STORAGE_KEYS.SAVED_TANGENTS]: savedTangents = [] } = await chrome.storage.local.get(
     STORAGE_KEYS.SAVED_TANGENTS
   );
@@ -298,18 +299,24 @@ function scheduleHide() {
 }
 
 function watchLinkHover() {
-  document.addEventListener("mouseover", (event) => {
-    if (!siteActive() || !settings.wikipedia.saveTangents) return;
-    const link = event.target.closest?.(SELECTORS.articleLinks);
-    if (!link || !isArticleLink(link) || pageUrl(link.href) === pageUrl()) return;
-    clearTimeout(hideTimer);
-    if (link === hoveredLink) return;
-    clearTimeout(showTimer);
-    showTimer = setTimeout(() => showSaveButton(link), SAVE_DELAY_MS);
-  });
-  document.addEventListener("mouseout", (event) => {
-    if (event.target.closest?.(SELECTORS.articleLinks)) scheduleHide();
-  });
+  document.addEventListener(
+    "mouseover",
+    /** @param {any} event */ (event) => {
+      if (!siteActive() || !settings.wikipedia.saveTangents) return;
+      const link = event.target.closest?.(SELECTORS.articleLinks);
+      if (!link || !isArticleLink(link) || pageUrl(link.href) === pageUrl()) return;
+      clearTimeout(hideTimer);
+      if (link === hoveredLink) return;
+      clearTimeout(showTimer);
+      showTimer = setTimeout(() => showSaveButton(link), SAVE_DELAY_MS);
+    }
+  );
+  document.addEventListener(
+    "mouseout",
+    /** @param {any} event */ (event) => {
+      if (event.target.closest?.(SELECTORS.articleLinks)) scheduleHide();
+    }
+  );
   // Button is fixed-position and would drift away from the link
   window.addEventListener("scroll", hideSaveButton, { passive: true });
 }

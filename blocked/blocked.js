@@ -11,6 +11,7 @@ const BODY = {
 const blockedUrl = parseBlockedUrl(location.hash.slice(1));
 const prefersDark = matchMedia("(prefers-color-scheme: dark)");
 
+/** @type {Settings} */
 let settings;
 
 // Any site can open this page with whatever hash it wants, so only allow http(s)
@@ -78,6 +79,7 @@ function showNotListed() {
 }
 
 function buttons(site) {
+  /** @type {OverlayButton[]} */
   const list = [{ label: "Back to studying", primary: true, onClick: leave }];
   if (site && settings.mode !== "block") {
     list.unshift({

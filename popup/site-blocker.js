@@ -10,13 +10,13 @@ const SITE_MODE_NOTES = {
 // Keeps settings under the sync storage per-item limit
 const MAX_CUSTOM_SITES = 50;
 
-const siteBlockInput = document.getElementById("siteBlock");
+const siteBlockInput = /** @type {HTMLInputElement} */ (document.getElementById("siteBlock"));
 const sitesCount = document.getElementById("sites-count");
 const sitesDesc = document.getElementById("sites-desc");
 const siteOptions = document.getElementById("site-options");
 const siteList = document.getElementById("site-list");
 const addSiteForm = document.getElementById("add-site");
-const addSiteInput = document.getElementById("add-site-input");
+const addSiteInput = /** @type {HTMLInputElement} */ (document.getElementById("add-site-input"));
 const addSiteError = document.getElementById("add-site-error");
 const siteAccess = document.getElementById("site-access");
 
@@ -104,15 +104,18 @@ siteBlockInput.addEventListener("change", () => {
   if (settings.siteBlock.enabled) requestSiteAccess(chosenSites(settings));
 });
 
-siteList.addEventListener("change", (e) => {
-  const id = e.target.dataset.site;
-  if (!id) return;
-  const excluded = settings.siteBlock.excluded.filter((x) => x !== id);
-  if (!e.target.checked) excluded.push(id);
-  settings.siteBlock.excluded = excluded;
-  update();
-  if (e.target.checked) requestSiteAccess(allSites(settings).filter((site) => site.id === id));
-});
+siteList.addEventListener(
+  "change",
+  /** @param {any} e */ (e) => {
+    const id = e.target.dataset.site;
+    if (!id) return;
+    const excluded = settings.siteBlock.excluded.filter((x) => x !== id);
+    if (!e.target.checked) excluded.push(id);
+    settings.siteBlock.excluded = excluded;
+    update();
+    if (e.target.checked) requestSiteAccess(allSites(settings).filter((site) => site.id === id));
+  }
+);
 
 addSiteForm.addEventListener("submit", (e) => {
   e.preventDefault();

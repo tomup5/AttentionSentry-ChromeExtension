@@ -25,10 +25,8 @@ function currentVideoId() {
 }
 
 function resumeMainVideo() {
-  document
-    .querySelector(SELECTORS.mainVideo)
-    ?.play()
-    .catch(() => {});
+  const video = /** @type {HTMLVideoElement} */ (document.querySelector(SELECTORS.mainVideo));
+  video?.play().catch(() => {});
 }
 
 const INTENTION = {

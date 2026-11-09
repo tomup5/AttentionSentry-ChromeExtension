@@ -43,6 +43,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 // In session storage so restarting the browser re-blocks everything
 async function getUnlocks() {
+  /** @type {Record<string, any>} */
   const stored = await chrome.storage.session.get(STORAGE_KEYS.UNLOCKS);
   return stored[STORAGE_KEYS.UNLOCKS] ?? {};
 }

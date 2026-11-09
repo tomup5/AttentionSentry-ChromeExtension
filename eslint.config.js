@@ -122,7 +122,7 @@ module.exports = [
   { files: ["blocked/**/*.js"], languageOptions: { globals: UI } },
   { files: ["popup/**/*.js"], languageOptions: { globals: POPUP } },
   {
-    files: ["tests/**/*.js", "eslint.config.js"],
+    files: ["tests/**/*.js", "scripts/**/*.js", "eslint.config.js"],
     languageOptions: { sourceType: "commonjs", globals: globals.node }
   }
 ];
