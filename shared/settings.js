@@ -1,5 +1,6 @@
 // Settings defaults and storage helpers.
 
+/** @type {Settings} */
 const DEFAULT_SETTINGS = {
   studyMode: false,
   mode: "hint", // "hint" | "pause" | "block"
@@ -60,6 +61,7 @@ const DEFAULT_SETTINGS = {
 };
 
 // Merge over the defaults so settings added in later versions still have a value
+/** @returns {Settings} */
 function mergeSettings(saved) {
   saved = saved || {};
   const merged = { ...DEFAULT_SETTINGS, ...saved };
@@ -70,6 +72,7 @@ function mergeSettings(saved) {
   return merged;
 }
 
+/** @returns {Promise<Settings>} */
 async function loadSettings() {
   const stored = await chrome.storage.sync.get("settings");
   return mergeSettings(stored.settings);
@@ -80,6 +83,10 @@ async function saveSettings(settings) {
 }
 
 // On failure, returns what's actually stored along with the error
+/**
+ * @param {Settings} draft
+ * @returns {Promise<{ settings: Settings, error: Error | null }>}
+ */
 async function persistSettings(draft) {
   try {
     await saveSettings(draft);

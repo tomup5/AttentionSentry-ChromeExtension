@@ -65,7 +65,7 @@ function studyChannelToReturnTo() {
 function goToChannel({ guild, channel }) {
   closeOverlay();
   const path = `/channels/${guild}/${channel}`;
-  const link = document.querySelector(`a[href="${path}"]`);
+  const link = /** @type {HTMLElement} */ (document.querySelector(`a[href="${path}"]`));
   if (link) link.click();
   else location.assign(path);
 }
@@ -120,6 +120,7 @@ function checkChannel() {
     return;
   }
 
+  /** @type {OverlayButton[]} */
   const buttons = [
     { label: "It's for studying too", onClick: markStudyChannel },
     { label: `Back to ${target.name}`, primary: true, onClick: () => goToChannel(target) }
@@ -196,12 +197,14 @@ function onActive() {
 }
 
 (async function start() {
-  ({ [STORAGE_KEY]: studyChannels = [] } = await chrome.storage.local.get(STORAGE_KEY));
+  ({ [STORAGE_KEY]: studyChannels = [] } = /** @type {any} */ (
+    await chrome.storage.local.get(STORAGE_KEY)
+  ));
 
   // Popup can remove channels
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes[STORAGE_KEY] && settings) {
-      studyChannels = changes[STORAGE_KEY].newValue ?? [];
+      studyChannels = /** @type {any[]} */ (changes[STORAGE_KEY].newValue ?? []);
       refresh();
     }
   });

@@ -9,6 +9,7 @@ const sessionStats = document.getElementById("session-stats");
 async function renderSession() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const key = tab && tabSessionKey(tab.id);
+  /** @type {any} */
   const entry = key ? (await chrome.storage.session.get(key))[key] : null;
   const site = SITE_SECTIONS.find((s) => s.key === entry?.lastSite);
   const data = site ? entry[site.key] : null;

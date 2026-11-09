@@ -5,6 +5,7 @@ const ACTIVE_TIME_SAVE_MS = 15000;
 const WAIT_TIMEOUT_MS = 10000;
 const MUTATION_THROTTLE_MS = 250;
 
+/** @type {Settings} */
 let settings = null;
 let siteKey = null; // e.g. "reddit"
 
@@ -65,7 +66,12 @@ function throttle(fn, ms) {
 }
 
 // Whole-page MutationObserver with an on/off switch. Returns setEnabled(bool), which is
-// fine to call repeatedly. onStart runs every time observing starts.
+// fine to call repeatedly. onStart runs every time observing starts, throttleMs limits
+// how often the callback runs, and observe overrides the MutationObserver options.
+/**
+ * @param {(records: MutationRecord[]) => void} callback
+ * @param {PageObserverOptions} [options]
+ */
 function createPageObserver(
   callback,
   { throttleMs, observe = { childList: true, subtree: true }, onStart } = {}
@@ -105,6 +111,10 @@ function recordActiveTime() {
 //                  to be ok with running twice on one page
 //   onActive     - redraw whatever depends on settings
 //   onInactive   - extra cleanup when the site gets switched off
+//   spa          - poll the URL, for sites that change pages without a full load
+//   navigationEvent - DOM event the site fires when it navigates, if it has one
+//   isDark       - whether the host page is dark, for the "auto" background
+/** @param {SiteHooks} hooks */
 async function startSite({
   site,
   applyClasses,

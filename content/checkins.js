@@ -31,6 +31,7 @@ function goalReminder() {
 
 // config: { siteName, reasons: [{ value, label, studying }], placeholder, onAccept? }
 // onAccept runs after the overlay closes, e.g. to resume the video
+/** @param {IntentionConfig} config */
 function showIntentionScreen(config) {
   const mode = settings.mode;
 
@@ -169,8 +170,9 @@ function createScrollNudge({ siteName, isFeed, stopFeed }) {
   };
 }
 
-// Used for the YouTube video count and the NYT article count
-
+// Used for the YouTube video count and the NYT article count.
+// noun is "Video" or "Article", onContinue runs after the overlay closes.
+/** @param {CountCheckIn} options */
 function showCountCheckIn({ noun, count, technique, onContinue, pauseVideos = true }) {
   const body = goalReminder() ?? "Is this still part of what you're studying?";
 

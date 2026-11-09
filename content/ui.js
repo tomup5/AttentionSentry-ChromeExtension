@@ -23,6 +23,7 @@ function getToastStack() {
   return stack;
 }
 
+/** @param {ToastOptions} options */
 function showToast({ title, body, technique, duration = TOAST_DURATION_MS }) {
   const toast = el(
     "div",
@@ -62,8 +63,11 @@ function keepFocusInside(event, container) {
   }
 }
 
+// title, body and technique are the text. content is an optional element above the buttons.
 // buttons: [{ label, primary, countdown (seconds disabled), onClick(close) }]
+// pauseVideos keeps every video paused while it's open.
 // Returns { root, close, setButtons }, or null if one is already open.
+/** @param {OverlayOptions} options */
 function showOverlay({ title, body, technique, content, buttons = [], pauseVideos = true }) {
   if (currentOverlay) return null;
 
@@ -93,7 +97,7 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
     if (e.key === "Tab") keepFocusInside(e, card);
   });
 
-  const previousFocus = document.activeElement;
+  const previousFocus = /** @type {HTMLElement} */ (document.activeElement);
   const timers = [];
 
   function setButtons(list) {

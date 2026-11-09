@@ -13,14 +13,17 @@ const MODES = {
   }
 };
 
+/** @type {Settings} */
 let settings;
 
 const mainView = document.getElementById("main-view");
 const settingsView = document.getElementById("settings-view");
-const studyModeInput = document.getElementById("studyMode");
+const studyModeInput = /** @type {HTMLInputElement} */ (document.getElementById("studyMode"));
 const statusText = document.getElementById("status-text");
 const controls = document.getElementById("controls");
-const modeButtons = document.querySelectorAll("#mode button");
+const modeButtons = /** @type {NodeListOf<HTMLButtonElement>} */ (
+  document.querySelectorAll("#mode button")
+);
 const modeDesc = document.getElementById("mode-desc");
 const saveError = document.getElementById("save-error");
 
@@ -32,7 +35,7 @@ function render() {
   modeButtons.forEach((btn) => {
     const active = btn.dataset.mode === settings.mode;
     btn.classList.toggle("active", active);
-    btn.setAttribute("aria-checked", active);
+    btn.setAttribute("aria-checked", String(active));
   });
   modeDesc.textContent = MODES[settings.mode].description;
 
@@ -46,7 +49,9 @@ function render() {
   // counts each row's main switch, not sub-options or the header
   for (const { key } of SITE_SECTIONS) {
     const section = document.querySelector(`[data-section="${key}"]`);
-    const features = [...section.querySelectorAll(".row > .switch input")];
+    const features = /** @type {HTMLInputElement[]} */ ([
+      ...section.querySelectorAll(".row > .switch input")
+    ]);
     const on = features.filter((input) => input.checked).length;
     const enabled = settings[key].enabled;
     section.querySelector(".count").textContent = enabled
@@ -92,7 +97,7 @@ studyModeInput.addEventListener("change", () => {
 
 modeButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
-    settings.mode = btn.dataset.mode;
+    settings.mode = /** @type {Mode} */ (btn.dataset.mode);
     update();
   });
 });
@@ -107,7 +112,7 @@ featureInputs.forEach((input) => {
 
 document.querySelectorAll(".site-toggle").forEach((toggle) => {
   toggle.addEventListener("click", () =>
-    toggleSection(toggle.closest("[data-section]").dataset.section)
+    toggleSection(/** @type {HTMLElement} */ (toggle.closest("[data-section]")).dataset.section)
   );
 });
 
@@ -121,12 +126,14 @@ Promise.all([
     STORAGE_KEYS.SAVED_TANGENTS,
     STORAGE_KEYS.STUDY_CHANNELS
   ])
-]).then(([loaded, local]) => {
-  settings = loaded;
-  openSections = local[STORAGE_KEYS.OPEN_SECTIONS] ?? [];
-  render();
-  renderSections();
-  renderSavedTangents(local[STORAGE_KEYS.SAVED_TANGENTS]);
-  renderStudyChannels(local[STORAGE_KEYS.STUDY_CHANNELS]);
-});
+]).then(
+  /** @param {[Settings, Record<string, any>]} results */ ([loaded, local]) => {
+    settings = loaded;
+    openSections = local[STORAGE_KEYS.OPEN_SECTIONS] ?? [];
+    render();
+    renderSections();
+    renderSavedTangents(local[STORAGE_KEYS.SAVED_TANGENTS]);
+    renderStudyChannels(local[STORAGE_KEYS.STUDY_CHANNELS]);
+  }
+);
 renderSession();

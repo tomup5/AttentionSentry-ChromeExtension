@@ -164,6 +164,7 @@ const blockerSection = document.querySelector('[data-section="siteBlock"]');
 let openSections = [];
 
 // Filled by buildSiteSections(). data-setting is "site.key".
+/** @type {any} */
 let featureInputs = [];
 
 function switchControl(setting, label) {
@@ -238,7 +239,9 @@ function buildSiteSections() {
   featureInputs = document.querySelectorAll("[data-setting]");
 
   // Up/down arrows before each header's switch
-  for (const section of document.querySelectorAll("[data-section]")) {
+  for (const section of /** @type {NodeListOf<HTMLElement>} */ (
+    document.querySelectorAll("[data-section]")
+  )) {
     const key = section.dataset.section;
     const name = section.querySelector(".site-name").textContent;
     const arrow = (dir, label, d) =>
@@ -314,16 +317,19 @@ function renderOrder() {
   order.forEach((key, i) => {
     const section = document.querySelector(`[data-section="${key}"]`);
     controls.append(section);
-    section.querySelector('[data-dir="-1"]').disabled = i === 0;
-    section.querySelector('[data-dir="1"]').disabled = i === order.length - 1;
+    /** @type {HTMLButtonElement} */ (section.querySelector('[data-dir="-1"]')).disabled = i === 0;
+    /** @type {HTMLButtonElement} */ (section.querySelector('[data-dir="1"]')).disabled =
+      i === order.length - 1;
   });
 }
 
 function renderSections() {
-  for (const section of document.querySelectorAll("[data-section]")) {
+  for (const section of /** @type {NodeListOf<HTMLElement>} */ (
+    document.querySelectorAll("[data-section]")
+  )) {
     const open = openSections.includes(section.dataset.section);
-    section.querySelector(".site-body").hidden = !open;
-    section.querySelector(".site-toggle").setAttribute("aria-expanded", open);
+    /** @type {HTMLElement} */ (section.querySelector(".site-body")).hidden = !open;
+    section.querySelector(".site-toggle").setAttribute("aria-expanded", String(open));
   }
 }
 

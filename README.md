@@ -87,9 +87,10 @@ Requires Node 22 or later. Nothing here is needed to run the extension.
 
 ```sh
 npm install
-npm test        # unit and integration tests
-npm run lint    # ESLint, including cross-file globals
-npm run check   # lint, formatting, and tests, as run in CI
+npm test           # unit and integration tests
+npm run lint       # ESLint, including cross-file globals
+npm run typecheck  # TypeScript over the JavaScript, one context at a time
+npm run check      # lint, types, formatting, and tests, as run in CI
 ```
 
 The tests load the real, unmodified scripts in manifest order into [jsdom](https://github.com/jsdom/jsdom), with only the `chrome.*` APIs faked. The popup and blocked page are loaded from their real HTML.
