@@ -138,7 +138,7 @@ function checkChannel() {
 
   showOverlay({
     title: `${name} isn't one of your study channels`,
-    body: `You marked ${studyList} for studying. Is this channel part of it?`,
+    body: `You said ${studyList} ${studyChannels.length === 1 ? "was" : "were"} for studying. Is this one too?`,
     technique: TECHNIQUES.offTopicChat,
     buttons,
     pauseVideos: false
@@ -165,8 +165,8 @@ function setChannelTagging(enabled) {
 
 function explainBadgesOnce() {
   explainOnce(STORAGE_KEYS.DISCORD_BADGES_EXPLAINED, {
-    title: "Unread badges on other servers are hidden",
-    body: "Messages are still there when you're done studying.",
+    title: "Hid your unread badges",
+    body: "Your messages aren't going anywhere. Check them when you're done.",
     technique: TECHNIQUES.unreadBadges
   });
 }

@@ -72,8 +72,8 @@ function setShadowStyling(enabled) {
 
 function explainMetricsOnce() {
   explainOnce(STORAGE_KEYS.REDDIT_METRICS_EXPLAINED, {
-    title: "Vote and comment counts are hidden",
-    body: "Pick posts by whether they answer your question.",
+    title: "I hid Reddit's scoreboard",
+    body: "Go by whether the post answers your question, not the upvotes.",
     technique: TECHNIQUES.votes
   });
 }

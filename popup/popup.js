@@ -4,12 +4,12 @@
 const MODES = {
   hint: {
     label: "Hint",
-    description: "Show a short note explaining the pattern. Nothing is removed."
+    description: "Just tells you what the site's up to. Nothing gets removed."
   },
-  pause: { label: "Pause", description: "Pause with a brief countdown before you can continue." },
+  pause: { label: "Pause", description: "Makes you wait a few seconds before you can keep going." },
   block: {
     label: "Block",
-    description: "Stop endless feeds, remove recommendations, and keep blocked sites closed."
+    description: "Kills endless feeds and recs, and keeps blocked sites shut."
   }
 };
 

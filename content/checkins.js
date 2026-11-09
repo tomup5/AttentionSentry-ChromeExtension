@@ -26,7 +26,7 @@ function intentionText() {
 
 function goalReminder() {
   const text = intentionText();
-  return text ? `You came here for: ${text}` : null;
+  return text ? `You said you came for: ${text}` : null;
 }
 
 // config: { siteName, reasons: [{ value, label, studying }], placeholder, onAccept? }
@@ -38,7 +38,7 @@ function showIntentionScreen(config) {
   const select = el(
     "select",
     { class: "sm-select" },
-    el("option", { value: "", text: "Choose a reason…" }),
+    el("option", { value: "", text: "Pick one" }),
     ...config.reasons.map((r) => el("option", { value: r.value, text: r.label }))
   );
   const note = el("input", {
@@ -50,8 +50,8 @@ function showIntentionScreen(config) {
   const form = el("div", { class: "sm-form" }, select, note);
 
   const overlay = showOverlay({
-    title: `What brings you to ${config.siteName}?`,
-    body: "Say why you're here before you go on.",
+    title: `Before ${config.siteName} eats your afternoon, why'd you come here?`,
+    body: "Pick a reason so the feed doesn't pick one for you.",
     technique: TECHNIQUES.intention,
     content: form
   });
@@ -83,7 +83,7 @@ function showIntentionScreen(config) {
 
     // Pause and Block need a reason
     if (!reason) {
-      overlay.setButtons([{ label: "Pick a reason first", onClick: () => select.focus() }]);
+      overlay.setButtons([{ label: "Gotta pick one first", onClick: () => select.focus() }]);
       return;
     }
 
@@ -92,7 +92,7 @@ function showIntentionScreen(config) {
     } else if (mode === "pause") {
       overlay.setButtons([
         { label: "Back to studying", primary: true, onClick: goBack },
-        { label: "Continue anyway", countdown: LONG_COUNTDOWN_S, onClick: () => accept(reason) }
+        { label: "Continue", countdown: LONG_COUNTDOWN_S, onClick: () => accept(reason) }
       ]);
     } else {
       // Block: only way through is turning the extension off
@@ -137,14 +137,14 @@ function createScrollNudge({ siteName, isFeed, stopFeed }) {
 
     if (settings.mode === "hint") {
       showToast({
-        title: `You've scrolled about ${depth} screens down`,
+        title: `${depth} screens in and ${siteName} is still going`,
         body: goalReminder(),
         technique: TECHNIQUES.infiniteScroll
       });
     } else if (settings.mode === "pause") {
       showOverlay({
-        title: `${depth} screens of scrolling`,
-        body: "Is what you need really further down?",
+        title: `${depth} screens and still no bottom`,
+        body: "There's no end to this thing, they made sure of that.",
         technique: TECHNIQUES.infiniteScroll,
         buttons: [
           close,
@@ -154,8 +154,8 @@ function createScrollNudge({ siteName, isFeed, stopFeed }) {
     } else {
       stopFeed();
       showOverlay({
-        title: "This feed now has a bottom",
-        body: `We stopped ${siteName} from loading more. If you need something specific, search for it.`,
+        title: "Feed's done, I cut it off",
+        body: `${siteName} would've kept loading forever. If you need something specific, just search for it.`,
         technique: TECHNIQUES.infiniteScroll,
         buttons: [close, { label: "OK", onClick: (c) => c() }]
       });
@@ -174,22 +174,23 @@ function createScrollNudge({ siteName, isFeed, stopFeed }) {
 // noun is "Video" or "Article", onContinue runs after the overlay closes.
 /** @param {CountCheckIn} options */
 function showCountCheckIn({ noun, count, technique, onContinue, pauseVideos = true }) {
-  const body = goalReminder() ?? "Is this still part of what you're studying?";
+  const body = goalReminder() ?? "Still for class, or did the site pull you off track?";
+  const title = `${noun} #${count}. Did you pick this one or did they?`;
 
   if (settings.mode === "hint") {
-    showToast({ title: `${noun} #${count} this study session`, body, technique });
+    showToast({ title, body, technique });
     return;
   }
 
   showOverlay({
-    title: `${noun} #${count}: is this for your studying?`,
+    title,
     body,
     technique,
     pauseVideos,
     buttons: [
       { label: "Go back", onClick: goBack },
       {
-        label: "Yes, it's for studying",
+        label: "I picked it, it's for class",
         primary: true,
         countdown: settings.mode === "pause" ? SHORT_COUNTDOWN_S : 0,
         onClick: (close) => {

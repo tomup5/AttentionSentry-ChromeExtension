@@ -8,7 +8,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 
 **Summary** (max 132 characters):
 
-> Points out the attention-grabbing tricks websites use while you study.
+> Calls out the tricks sites use to keep you scrolling when you're supposed to be studying.
 
 **Category:** Productivity → Education
 
@@ -17,6 +17,8 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 > Attention Sentry is for studying on YouTube, Reddit, Wikipedia, Discord, and The New York Times. These sites are full of features meant to keep you on them longer, like infinite scroll, autoplay, vote counts, and daily-game streaks. When you run into one, the extension steps in and tells you what it is and why it works.
 >
 > The explanations are based on HCI research, and after a while you start spotting these patterns yourself.
+>
+> Made by a student, for students.
 >
 > YOUTUBE
 > • Intention check: asks why you're opening YouTube and keeps your answer pinned as a reminder

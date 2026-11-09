@@ -3,9 +3,9 @@
 const UNLOCK_COUNTDOWN = 15; // seconds, Pause mode only
 
 const BODY = {
-  hint: `You can still open it, and it'll stay open for ${UNLOCK_MINUTES} minutes.`,
-  pause: `If you still need it after a short wait, you can open it for ${UNLOCK_MINUTES} minutes.`,
-  block: "It opens again when you turn Attention Sentry off."
+  hint: `You can still open it for ${UNLOCK_MINUTES} minutes if you really need to.`,
+  pause: `Still need it after a quick wait? You get ${UNLOCK_MINUTES} minutes.`,
+  block: "It comes back when you turn Attention Sentry off."
 };
 
 const blockedUrl = parseBlockedUrl(location.hash.slice(1));
@@ -55,7 +55,7 @@ async function render() {
 
   closeOverlay();
   showOverlay({
-    title: `${label} is blocked while you study`,
+    title: `Nope, ${site?.label ?? "this site"} doesn't get your study time`,
     body: BODY[settings.mode],
     content: blockedUrl ? el("p", { class: "sm-url", text: blockedUrl.href }) : null,
     buttons: buttons(site),

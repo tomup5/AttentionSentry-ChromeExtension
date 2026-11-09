@@ -165,7 +165,7 @@ function nudge(trail) {
 
   showOverlay({
     title: `${hops} links from where you started`,
-    body: "Is this still part of what you're studying?",
+    body: "Still for class, or did we wander off?",
     technique: TECHNIQUES.linkHopping,
     content: trailElement(trail),
     buttons,
@@ -262,8 +262,8 @@ async function onSaveClick() {
   const first = !session.get("tangentExplained", false);
   session.set("tangentExplained", true);
   showToast({
-    title: `Saved "${title}" for later`,
-    body: "Find it in the Attention Sentry popup when you're done studying.",
+    title: "Saved it",
+    body: "It's in the popup for when you're done.",
     technique: first ? TECHNIQUES.saveForLater : null,
     duration: first ? TOAST_DURATION_MS : SAVED_TOAST_MS
   });
