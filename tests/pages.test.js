@@ -120,7 +120,7 @@ const buttonLabels = (page) =>
 
 test("the blocked page names the site and offers a way through in Hint mode", async (t) => {
   const page = await blocked(t, "hint");
-  assert.match(page.document.querySelector("h2").textContent, /^TikTok is blocked/);
+  assert.match(page.document.querySelector("h2").textContent, /TikTok doesn't get your study time/);
   assert.deepEqual(buttonLabels(page), ["Open anyway", "Back to studying"]);
 });
 

@@ -5,7 +5,7 @@
 ![No runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-A Chrome extension for studying on YouTube, Reddit, Wikipedia, Discord, and The New York Times. When one of these sites uses a design pattern meant to hold your attention, like infinite scroll, autoplay, view counts, or daily games, the extension steps in and tells you which pattern it is.
+A Chrome extension made by a student, for students, for studying on YouTube, Reddit, Wikipedia, Discord, and The New York Times. When one of these sites uses a design pattern meant to hold your attention, like infinite scroll, autoplay, view counts, or daily games, the extension steps in and tells you which pattern it is.
 
 The idea is that once you know what these patterns look like, you start noticing them yourself. The explanations are based on HCI research on dark patterns and attention capture (listed under Background).
 
@@ -16,6 +16,14 @@ The idea is that once you know what these patterns look like, you start noticing
 <p align="center">
   <img src="docs/screenshots/popup.png" alt="The Attention Sentry popup with per-site controls" width="320" />
 </p>
+
+## By a student, for students
+
+I'm a student and I built this for other students. You can't just block YouTube or Reddit when your lecture or the answer to your homework question is on there, so Attention Sentry lets you keep using those sites and goes after the features that pull you off track.
+
+The on-page text is written the way I'd warn a friend. The blame goes on the companies that built these features, and never on you for getting caught by them.
+
+If a site or a feature keeps getting you, open an issue and tell me about it.
 
 ## How it works
 

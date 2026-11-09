@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Attention Sentry: Study Without Distraction",
   "version": "1.0.0",
-  "description": "Points out the attention-grabbing tricks websites use while you study.",
+  "description": "Calls out the tricks sites use to keep you scrolling when you're supposed to be studying.",
   "minimum_chrome_version": "105",
 
   "content_security_policy": {

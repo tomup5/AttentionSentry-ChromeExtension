@@ -191,7 +191,7 @@ test("a count check-in is a toast in Hint mode", async (t) => {
   page.run(`showCountCheckIn({ noun: "Video", count: 3, technique: TECHNIQUES.recommendations })`);
   assert.equal(
     page.document.querySelector(".sm-toast h4").textContent,
-    "Video #3 this study session"
+    "Video #3. Did you pick this one or did they?"
   );
 });
 
@@ -199,7 +199,7 @@ test("a count check-in waits five seconds in Pause mode", async (t) => {
   const page = await start(t, { settings: activeSettings({ mode: "pause" }) });
   page.run(`showCountCheckIn({ noun: "Article", count: 4, technique: TECHNIQUES.articleChain })`);
   const continueButton = page.document.querySelector(".sm-primary");
-  assert.equal(continueButton.textContent, "Yes, it's for studying (5)");
+  assert.equal(continueButton.textContent, "I picked it, it's for class (5)");
   page.window.closeOverlay();
 });
 

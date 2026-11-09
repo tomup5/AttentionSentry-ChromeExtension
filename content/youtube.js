@@ -111,8 +111,8 @@ const setMetricTagging = createPageObserver(onMetricMutations, {
 
 function explainMetricsOnce() {
   explainOnce(STORAGE_KEYS.YOUTUBE_METRICS_EXPLAINED, {
-    title: "View counts and likes are hidden",
-    body: "Pick videos by whether they'll help you study.",
+    title: "I hid YouTube's scoreboard",
+    body: "Now you can pick videos based on if they'll actually help.",
     technique: TECHNIQUES.socialProof
   });
 }
@@ -143,8 +143,8 @@ function onShortsVisit() {
       title,
       body:
         settings.mode === "block"
-          ? "Shorts are off-limits in Block mode once you've hit your limit."
-          : "Was any of that for your studying?",
+          ? "YouTube would've kept these coming forever, so Shorts are done for now."
+          : "YouTube would've kept these coming forever. Any of them for class?",
       technique: TECHNIQUES.shorts,
       buttons:
         settings.mode === "block"
@@ -165,7 +165,7 @@ async function disableAutoplay() {
     toggle.click();
     if (!session.get("autoplayExplained", false)) {
       session.set("autoplayExplained", true);
-      showToast({ title: "Autoplay turned off", technique: TECHNIQUES.autoplay });
+      showToast({ title: "Killed autoplay", technique: TECHNIQUES.autoplay });
     }
   }
 }

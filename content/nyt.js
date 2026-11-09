@@ -59,11 +59,12 @@ function checkGame() {
   const allowed = session.get("gamesAllowed", []);
   if (allowed.includes(game) || isOverlayOpen()) return;
   const allow = () => session.set("gamesAllowed", [...allowed, game]);
+  const title = `${game} can wait. The streak's just there to hook you.`;
 
   if (settings.mode === "hint") {
     allow();
     showToast({
-      title: `${game} while you study?`,
+      title,
       body: goalReminder(),
       technique: TECHNIQUES.dailyGames
     });
@@ -72,11 +73,11 @@ function checkGame() {
 
   const back = { label: "Back to studying", primary: true, onClick: goBack };
   showOverlay({
-    title: settings.mode === "block" ? `${game} is off while you study` : `Play ${game} now?`,
+    title,
     body:
       settings.mode === "block"
-        ? "It'll be here when you turn Attention Sentry off. Today's puzzle doesn't go anywhere."
-        : "Today's puzzle will still be here after you study.",
+        ? "It'll still be there when you turn Attention Sentry off. Today's puzzle isn't going anywhere."
+        : "Today's puzzle will still be there after you study.",
     technique: TECHNIQUES.dailyGames,
     buttons:
       settings.mode === "block"
