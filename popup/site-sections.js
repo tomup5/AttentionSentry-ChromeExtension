@@ -222,7 +222,7 @@ function buildSiteSections() {
         "button",
         { class: "site-toggle", type: "button", "aria-expanded": "false" },
         chevron.cloneNode(true),
-        el("img", { class: "site-icon", src: `../icons/sites/${site.icon}.png`, alt: "" }),
+        lineIcon(SITE_ICONS[site.icon], { size: 16, strokeWidth: 2, className: "site-icon" }),
         el("span", { class: "site-name", text: site.name }),
         el("span", { class: "count" })
       ),
@@ -254,7 +254,7 @@ function buildSiteSections() {
           title: label,
           "aria-label": `${label}: ${name}`
         },
-        moveIcon(d)
+        lineIcon([d])
       );
     const move = el(
       "div",
@@ -270,25 +270,54 @@ function buildSiteSections() {
   }
 }
 
-function moveIcon(d) {
+// Generic line icons, not the sites' logos. Paths are on a 24×24 grid.
+const SITE_ICONS = {
+  // play button
+  youtube: [
+    "M6.5 5h11a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-11a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z",
+    "M10 9.5v5l4.5-2.5z"
+  ],
+  // speech bubble with an upvote
+  reddit: [
+    "M20.5 11.5a8 8 0 0 1-11.8 7L4 20l1.4-4.3A8 8 0 1 1 20.5 11.5z",
+    "M12.5 8v6M9.8 10.6l2.7-2.6 2.7 2.6"
+  ],
+  // open book
+  wikipedia: [
+    "M2.5 5.5h6a3.5 3.5 0 0 1 3.5 3.5v10a2.5 2.5 0 0 0-2.5-2.5h-7z",
+    "M21.5 5.5h-6A3.5 3.5 0 0 0 12 9v10a2.5 2.5 0 0 1 2.5-2.5h7z"
+  ],
+  // channel hash
+  discord: ["M9.5 4L7.5 20M16.5 4l-2 16M4.5 9h16M3.5 15h16"],
+  // newspaper
+  nyt: [
+    "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+    "M7 8.5h10M7 12h10M7 15.5h6"
+  ]
+};
+
+function lineIcon(paths, { size = 12, strokeWidth = 2.4, className = "" } = {}) {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("width", "12");
-  svg.setAttribute("height", "12");
-  svg.setAttribute("aria-hidden", "true");
-  const path = document.createElementNS(ns, "path");
   for (const [attr, value] of Object.entries({
-    d,
+    viewBox: "0 0 24 24",
+    width: size,
+    height: size,
     fill: "none",
     stroke: "currentColor",
-    "stroke-width": "2.4",
+    "stroke-width": strokeWidth,
     "stroke-linecap": "round",
-    "stroke-linejoin": "round"
+    "stroke-linejoin": "round",
+    "aria-hidden": "true"
   })) {
-    path.setAttribute(attr, value);
+    svg.setAttribute(attr, String(value));
   }
-  svg.append(path);
+  if (className) svg.setAttribute("class", className);
+  for (const d of paths) {
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
   return svg;
 }
 
