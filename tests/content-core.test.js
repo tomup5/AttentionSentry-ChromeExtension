@@ -92,7 +92,7 @@ test("session.addToSet counts distinct values and ignores repeats", async (t) =>
 test("saving does nothing once the extension has been reloaded", async (t) => {
   const page = await start(t);
   delete page.chrome.runtime.id;
-  page.chrome.storage.session.set = () => {
+  page.chrome.runtime.sendMessage = () => {
     throw new Error("Extension context invalidated.");
   };
   assert.doesNotThrow(() => page.run(`session.set("goal", "x")`));

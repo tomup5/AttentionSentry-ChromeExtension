@@ -4,7 +4,8 @@ const MS_PER_MINUTE = 60000;
 
 const MESSAGES = {
   CLOSE_TAB: "closeTab",
-  GET_TAB_ID: "getTabId",
+  LOAD_SESSION: "loadSession",
+  SAVE_SESSION: "saveSession",
   UNLOCK_SITE: "unlockSite"
 };
 
