@@ -55,7 +55,12 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 **Assets:**
 
 - Store icon: `icons/icon128.png` (already in the zip)
-- Screenshots (1280×800): `docs/screenshots/wikipedia-checkin.png`, `docs/screenshots/youtube-intention.png`
+- Screenshots (1280×800), in this order:
+  1. `docs/screenshots/youtube-intention.png`
+  2. `docs/screenshots/wikipedia-checkin.png`
+  3. `store/screenshots/nyt-games.png`
+  4. `store/screenshots/blocked-page.png`
+  5. `store/screenshots/popup.png`
 - Small promo tile (440×280): `store/promo-tile.png`
 
 ## Privacy practices tab
