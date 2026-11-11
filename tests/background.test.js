@@ -86,9 +86,43 @@ test("Block mode refuses to unlock", async () => {
   assert.equal(await send(chrome, { type: "unlockSite", siteId: "x" }, sender), false);
 });
 
-test("a content script is told its own tab ID", async () => {
+test("session storage stays closed to content scripts", async () => {
   const { chrome } = await worker();
-  assert.equal(await send(chrome, { type: "getTabId" }, { tab: { id: 42 } }), 42);
+  assert.equal(chrome.storage.session.accessLevel, "TRUSTED_CONTEXTS");
+});
+
+test("a content script saves and loads its own tab's session state", async () => {
+  const { chrome } = await worker();
+  const sender = { tab: { id: 42 }, frameId: 0, url: "https://www.reddit.com/" };
+  const data = { lastSite: "reddit", reddit: { goal: "integrals" } };
+  assert.equal(await send(chrome, { type: "saveSession", data }, sender), true);
+  assert.deepEqual(plain(chrome.storage.session.data["tab-42"]), data);
+  assert.deepEqual(plain(await send(chrome, { type: "loadSession" }, sender)), data);
+});
+
+test("a content script can't reach another tab's session state or the unlocks", async () => {
+  const chrome = createChrome({
+    sync: { settings: blockingSettings() },
+    session: { "tab-1": { lastSite: "nyt" }, unlocks: { x: Date.now() + 60000 } }
+  });
+  await loadWorker({ chrome });
+  const sender = { tab: { id: 2 }, frameId: 0, url: "https://www.reddit.com/" };
+  assert.deepEqual(plain(await send(chrome, { type: "loadSession" }, sender)), {});
+  await send(chrome, { type: "saveSession", data: { unlocks: {} } }, sender);
+  assert.deepEqual(plain(chrome.storage.session.data["tab-1"]), { lastSite: "nyt" });
+  assert.ok(chrome.storage.session.data.unlocks.x);
+});
+
+test("a top-level page can close its own tab", async () => {
+  const { chrome } = await worker();
+  await send(chrome, { type: "closeTab" }, { tab: { id: 5 }, frameId: 0, url: BLOCKED_PAGE });
+  assert.deepEqual(chrome.removedTabs, [5]);
+});
+
+test("the blocked page can't close the tab when another site frames it", async () => {
+  const { chrome } = await worker();
+  await send(chrome, { type: "closeTab" }, { tab: { id: 5 }, frameId: 3, url: BLOCKED_PAGE });
+  assert.deepEqual(chrome.removedTabs, []);
 });
 
 test("closing a tab clears its session state", async () => {

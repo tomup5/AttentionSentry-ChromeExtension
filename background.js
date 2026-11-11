@@ -5,22 +5,24 @@ const REDIRECT_RULE_ID = 1;
 const BLOCK_RULE_ID = 2;
 const UNLOCK_ALARM_PREFIX = "unlock:";
 
-// storage.session is extension-only by default, content scripts need this to read it
-const sessionAccess = chrome.storage.session.setAccessLevel({
-  accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS"
-});
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!sender.tab) return;
 
-  if (message.type === MESSAGES.CLOSE_TAB) {
+  // Top frame only, so a site framing the blocked page can't get its own tab closed
+  if (message.type === MESSAGES.CLOSE_TAB && sender.frameId === 0) {
     chrome.tabs.remove(sender.tab.id);
   }
 
-  // Content scripts have no way to get their own tab id
-  if (message.type === MESSAGES.GET_TAB_ID) {
-    sessionAccess.then(() => sendResponse(sender.tab.id));
+  // storage.session stays extension-only, so content scripts go through here. Keyed by
+  // the sender's tab so a script can only reach its own tab's state, and never unlocks.
+  const key = tabSessionKey(sender.tab.id);
+  if (message.type === MESSAGES.LOAD_SESSION) {
+    chrome.storage.session.get(key).then((stored) => sendResponse(stored[key] ?? {}));
     return true; // keep the channel open for the async response
+  }
+  if (message.type === MESSAGES.SAVE_SESSION) {
+    chrome.storage.session.set({ [key]: message.data }).then(() => sendResponse(true));
+    return true;
   }
 
   // Has to come from the blocked page itself, otherwise any content script could unlock

@@ -66,7 +66,7 @@ See [features by site](#features-by-site) for the full list.
 ```
  Popup ──writes──► chrome.storage.sync ──onChanged──► Content scripts (one per site)
                           │                                   │
-                       onChanged                    closeTab / getTabId
+                       onChanged                closeTab / load+saveSession
                           ▼                                   │
                  Background worker ◄──────────────────────────┘
                           │
@@ -84,7 +84,7 @@ See [features by site](#features-by-site) for the full list.
   - `techniques.js` holds the copy and citations for each design pattern.
   - `youtube.js`, `reddit.js`, `wikipedia.js`, `discord.js`, and `nyt.js` contain each site's feature logic, with a matching `.css` file for the hiding. Rules are scoped to classes toggled on `<html>`, so they also apply to content the site renders later.
 - **`shared/`**: loaded by every context. `settings.js` is the schema and defaults, `common.js` the message types, storage keys, and DOM helper, `appearance.js` the fonts and themes, and `sites.js` the blockable sites and domain handling.
-- **`background.js`**: closes tabs on request, gives content scripts their tab ID, and turns the blocking settings into `declarativeNetRequest` rules. Temporary unlocks live in `chrome.storage.session` and end with a `chrome.alarms` alarm.
+- **`background.js`**: closes tabs on request, stores each tab's session state for its content scripts (which can't touch `chrome.storage.session` directly), and turns the blocking settings into `declarativeNetRequest` rules. Temporary unlocks live in `chrome.storage.session` and end with a `chrome.alarms` alarm.
 - **`blocked/`**: the page shown in place of a blocked site. It reuses the overlay card from `content/ui.js`.
 
 These sites change their markup regularly. Selectors each script depends on are kept in `SELECTORS` at the top of the site's `.js` file, and selectors used only for hiding live in its `.css` file.

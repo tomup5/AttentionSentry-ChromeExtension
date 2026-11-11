@@ -21,7 +21,10 @@ function createEvent() {
 function createStorageArea(name, data, onChanged) {
   return {
     data,
-    setAccessLevel: async () => {},
+    accessLevel: "TRUSTED_CONTEXTS",
+    async setAccessLevel({ accessLevel }) {
+      this.accessLevel = accessLevel;
+    },
     async get(keys) {
       const result = {};
       for (const key of [].concat(keys ?? Object.keys(data))) {
@@ -64,9 +67,13 @@ function createChrome({ sync = {}, local = {}, session = {}, granted = [], tabId
       onMessage: createEvent(),
       onStartup: createEvent(),
       onInstalled: createEvent(),
+      // Stands in for background.js, which files session state under the sender's tab
       async sendMessage(message) {
         sentMessages.push(message);
-        return message.type === "getTabId" ? tabId : undefined;
+        const key = `tab-${tabId}`;
+        if (message.type === "loadSession") return structuredClone(session[key] ?? {});
+        if (message.type === "saveSession") session[key] = structuredClone(message.data);
+        return undefined;
       }
     },
     tabs: {
