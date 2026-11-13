@@ -40,7 +40,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 > THE NEW YORK TIMES
 > • Steps in before Wordle, Connections, and other games, checks in after several articles, and hides Most Popular and "More to read"
 >
-> • Distracting-site blocker: keeps TikTok, Instagram, Snapchat, X, Facebook, Tumblr, Twitch, Netflix, Pinterest, and any sites you add closed while you study
+> • Distracting-site blocker: keeps a list of social media and streaming sites closed while you study. Pick which ones to block and add your own.
 >
 > THREE STRICTNESS LEVELS
 > • Hint: dismissible messages that explain the pattern
@@ -55,12 +55,7 @@ Text for the Developer Dashboard fields. Build the upload with `scripts/package.
 **Assets:**
 
 - Store icon: `icons/icon128.png` (already in the zip)
-- Screenshots (1280×800), in this order:
-  1. `docs/screenshots/youtube-intention.png`
-  2. `docs/screenshots/wikipedia-checkin.png`
-  3. `store/screenshots/nyt-games.png`
-  4. `store/screenshots/blocked-page.png`
-  5. `store/screenshots/popup.png`
+- Screenshots (1280×800): the five files in `store/screenshots/`, uploaded in the order their names are numbered
 - Small promo tile (440×280): `store/promo-tile.png`
 
 ## Privacy practices tab
