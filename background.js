@@ -8,7 +8,8 @@ const UNLOCK_ALARM_PREFIX = "unlock:";
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!sender.tab) return;
 
-  // Top frame only, so a site framing the blocked page can't get its own tab closed
+  // Top frame only. The CSP's frame-ancestors already stops sites framing the blocked
+  // page, this is a backup in case that ever changes.
   if (message.type === MESSAGES.CLOSE_TAB && sender.frameId === 0) {
     chrome.tabs.remove(sender.tab.id);
   }
@@ -26,7 +27,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   // Has to come from the blocked page itself, otherwise any content script could unlock
-  // sites. Top frame only, since other sites are allowed to load that page in an iframe.
+  // sites. Top frame only, same backup as above.
   if (
     message.type === MESSAGES.UNLOCK_SITE &&
     sender.frameId === 0 &&
