@@ -215,6 +215,24 @@ test("a count check-in runs onContinue after closing in Block mode", async (t) =
   assert.equal(page.window.isOverlayOpen(), false);
 });
 
+// YouTube's player focuses itself while loading, which sent typing to its shortcuts
+test("an open overlay takes focus back when the page grabs it", async (t) => {
+  const page = await start(t, { settings: activeSettings({ mode: "pause" }) });
+  const player = page.document.createElement("div");
+  player.tabIndex = 0;
+  page.document.body.append(player);
+  page.run(`showOverlay({ title: "Goal", content: el("input", { class: "sm-input" }) })`);
+  const input = page.document.querySelector(".sm-input");
+  input.focus();
+
+  player.focus();
+  assert.equal(page.document.activeElement, input);
+
+  page.window.closeOverlay();
+  player.focus();
+  assert.equal(page.document.activeElement, player);
+});
+
 test("explainOnce shows its toast the first time only", async (t) => {
   const page = await start(t);
   const explain = () => page.window.explainOnce("flag", { title: "Hidden" });

@@ -100,6 +100,18 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
   const previousFocus = /** @type {HTMLElement} */ (document.activeElement);
   const timers = [];
 
+  // YouTube's player grabs focus while it loads, which sends what you type into the
+  // goal box to its shortcuts instead. Keep focus inside the card while it's open.
+  let lastFocused = /** @type {HTMLElement} */ (card);
+  function keepFocus(/** @type {FocusEvent} */ event) {
+    const target = /** @type {HTMLElement} */ (event.target);
+    if (root.contains(target)) {
+      lastFocused = target;
+    } else {
+      (root.contains(lastFocused) ? lastFocused : card).focus({ preventScroll: true });
+    }
+  }
+
   function setButtons(list) {
     timers.forEach(clearInterval);
     buttonRow.replaceChildren();
@@ -134,6 +146,7 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
     root.remove();
     document.documentElement.classList.remove("sm-noscroll");
     document.removeEventListener("play", blockPlayback, true);
+    document.removeEventListener("focusin", keepFocus, true);
     currentOverlay = null;
     previousFocus?.focus?.({ preventScroll: true });
   }
@@ -143,6 +156,7 @@ function showOverlay({ title, body, technique, content, buttons = [], pauseVideo
   document.documentElement.classList.add("sm-noscroll");
   // Focus the card and not a button so Enter/Space can't dismiss it by accident
   card.focus({ preventScroll: true });
+  document.addEventListener("focusin", keepFocus, true);
 
   if (pauseVideos) {
     document.querySelectorAll("video").forEach((v) => v.pause());
